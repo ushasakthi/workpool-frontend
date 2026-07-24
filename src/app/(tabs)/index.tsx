@@ -1,13 +1,57 @@
 import * as Device from 'expo-device';
+import { useEffect, useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getHealth } from '@/api/health.api';
 import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+
+type ApiHealthState = 'loading' | 'ok' | 'error';
+
+function useApiHealth() {
+  const [state, setState] = useState<ApiHealthState>('loading');
+  const [database, setDatabase] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getHealth()
+      .then((health) => {
+        if (cancelled) return;
+        setDatabase(health.database);
+        setState('ok');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setState('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { state, database };
+}
+
+function getApiHealthHint(state: ApiHealthState, database: string | null) {
+  if (state === 'loading') {
+    return <ThemedText type="small">checking…</ThemedText>;
+  }
+  if (state === 'error') {
+    return (
+      <ThemedText type="small" themeColor="textSecondary">
+        unreachable
+      </ThemedText>
+    );
+  }
+  return <ThemedText type="small">{`connected · db ${database}`}</ThemedText>;
+}
 
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
@@ -29,6 +73,8 @@ function getDevMenuHint() {
 }
 
 export default function HomeScreen() {
+  const apiHealth = useApiHealth();
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -46,12 +92,16 @@ export default function HomeScreen() {
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
           <HintRow
             title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+            hint={<ThemedText type="code">src/app/(tabs)/index.tsx</ThemedText>}
           />
           <HintRow title="Dev tools" hint={getDevMenuHint()} />
           <HintRow
             title="Fresh start"
             hint={<ThemedText type="code">npm run reset-project</ThemedText>}
+          />
+          <HintRow
+            title="API health"
+            hint={getApiHealthHint(apiHealth.state, apiHealth.database)}
           />
         </ThemedView>
 

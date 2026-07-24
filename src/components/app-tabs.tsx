@@ -27,6 +27,19 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+
+      {/* Icons pending the design step — labels only for now. */}
+      <NativeTabs.Trigger name="rides">
+        <NativeTabs.Trigger.Label>Rides</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="bookings">
+        <NativeTabs.Trigger.Label>Bookings</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
