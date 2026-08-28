@@ -14,6 +14,17 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+    placeholder: '#9AA0A6',
+    border: '#E3E4E8',
+    primary: '#2E6B4F',
+    primaryPressed: '#255A42',
+    onPrimary: '#FFFFFF',
+    primarySoft: '#E3F0E7',
+    primarySoftText: '#2E6B4F',
+    error: '#B3261E',
+    errorSoft: '#FBE4E1',
+    warning: '#8A6D1D',
+    warningSoft: '#F5EBD3',
   },
   dark: {
     text: '#ffffff',
@@ -21,6 +32,17 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+    placeholder: '#7A7F87',
+    border: '#2E3135',
+    primary: '#3E8161',
+    primaryPressed: '#4C9172',
+    onPrimary: '#FFFFFF',
+    primarySoft: '#1C3327',
+    primarySoftText: '#8FC7A8',
+    error: '#E5847C',
+    errorSoft: '#3B211F',
+    warning: '#D8B863',
+    warningSoft: '#3A311C',
   },
 } as const;
 
@@ -63,3 +85,6 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+// Admin screens are a desktop-oriented working tool (wide tables, dense info) rather
+// than the mobile-first consumer app, so they get a much wider content column.
+export const AdminMaxContentWidth = 1280;
