@@ -1,25 +1,115 @@
 import Constants from 'expo-constants';
-import axios from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 export const AUTH_TOKEN_STORAGE_KEY = 'workpool_auth_token';
+export const AUTH_REFRESH_TOKEN_STORAGE_KEY = 'workpool_auth_refresh_token';
 
-const apiUrl = Constants.expoConfig?.extra?.apiUrl as string;
+// Endpoints where a 401 is always a business-logic error (bad credentials, expired reset
+// token, ...), never a "your session expired" signal — never worth a refresh-and-retry.
+const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/forgot-password', '/auth/reset-password'];
+
+export const apiUrl = Constants.expoConfig?.extra?.apiUrl as string;
 
 export const apiClient = axios.create({
   baseURL: apiUrl,
 });
 
-apiClient.interceptors.request.use(async (config) => {
-  // expo-secure-store has no web implementation, so token reads are
-  // best-effort there — the request proceeds unauthenticated instead of failing.
+// expo-secure-store has no web implementation (its web module is a stub), so every
+// call throws there — reads/writes/deletes fall back to this in-memory-only session
+// state instead of failing the request (lost on full page reload, unlike native).
+const memorySecureStore = new Map<string, string>();
+
+export async function readSecureItem(key: string): Promise<string | null> {
   try {
-    const token = await SecureStore.getItemAsync(AUTH_TOKEN_STORAGE_KEY);
-    if (token) {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    }
+    return await SecureStore.getItemAsync(key);
   } catch {
-    // no-op: unsupported platform (web) or empty store
+    return memorySecureStore.get(key) ?? null;
+  }
+}
+
+export async function writeSecureItem(key: string, value: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(key, value);
+  } catch {
+    memorySecureStore.set(key, value);
+  }
+}
+
+export async function deleteSecureItem(key: string): Promise<void> {
+  try {
+    await SecureStore.deleteItemAsync(key);
+  } catch {
+    memorySecureStore.delete(key);
+  }
+}
+
+// Set by useAuthStore so this module can reset auth state on an unrecoverable 401,
+// without api/client.ts importing the store back (that would be circular — client.ts
+// is imported by users.api.ts is imported by the store).
+let handleSessionExpired: (() => void) | null = null;
+export function setSessionExpiredHandler(handler: () => void): void {
+  handleSessionExpired = handler;
+}
+
+apiClient.interceptors.request.use(async (config) => {
+  const token = await readSecureItem(AUTH_TOKEN_STORAGE_KEY);
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
   return config;
 });
+
+// Single in-flight refresh shared by every request that hits a 401 at the same time,
+// so concurrent requests don't each rotate (and invalidate each other's) refresh token.
+let refreshPromise: Promise<string | null> | null = null;
+
+async function performRefresh(): Promise<string | null> {
+  const refreshToken = await readSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY);
+  if (!refreshToken) return null;
+
+  try {
+    const response = await axios.post<{ data: { accessToken: string; refreshToken: string } }>(
+      `${apiUrl}/auth/refresh`,
+      { refreshToken },
+    );
+    const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+    await Promise.all([
+      writeSecureItem(AUTH_TOKEN_STORAGE_KEY, accessToken),
+      writeSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY, newRefreshToken),
+    ]);
+    return accessToken;
+  } catch {
+    return null;
+  }
+}
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    const isPublicAuthPath = PUBLIC_AUTH_PATHS.some((path) => originalRequest?.url?.includes(path));
+
+    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry || isPublicAuthPath) {
+      throw error;
+    }
+    originalRequest._retry = true;
+
+    refreshPromise ??= performRefresh().finally(() => {
+      refreshPromise = null;
+    });
+    const newAccessToken = await refreshPromise;
+
+    if (!newAccessToken) {
+      await Promise.all([
+        deleteSecureItem(AUTH_TOKEN_STORAGE_KEY),
+        deleteSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
+      ]);
+      handleSessionExpired?.();
+      throw error;
+    }
+
+    originalRequest.headers.set('Authorization', `Bearer ${newAccessToken}`);
+    return apiClient(originalRequest);
+  },
+);
