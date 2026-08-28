@@ -10,8 +10,10 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     icon: './assets/expo.icon',
+    bundleIdentifier: 'com.workpool.app',
   },
   android: {
+    package: 'com.workpool.app',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -35,6 +37,13 @@ const config: ExpoConfig = {
       },
     ],
     'expo-secure-store',
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Allow WorkPool to access your photos to upload your NIC.',
+        cameraPermission: false,
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
