@@ -12,6 +12,16 @@ interface MessageResponse {
   message: string;
 }
 
+export interface AdminStats {
+  activePassengers: number;
+  activeRiders: number;
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const response = await apiClient.get<SuccessResponse<AdminStats>>('/admin/stats');
+  return response.data.data;
+}
+
 export async function listVerifications(status?: VerificationStatus): Promise<VerificationSubmission[]> {
   const response = await apiClient.get<SuccessResponse<VerificationSubmission[]>>('/admin/verifications', {
     params: status ? { status } : undefined,

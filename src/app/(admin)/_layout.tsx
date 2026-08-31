@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { AdminMaxContentWidth, Spacing } from '@/constants/theme';
+import { AdminHeader } from '@/components/admin/admin-header';
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function AdminLayout() {
@@ -9,8 +10,12 @@ export default function AdminLayout() {
 
   return (
     <View style={[styles.page, { backgroundColor: theme.backgroundElement }]}>
-      <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
-        <Stack screenOptions={{ headerShown: false }} />
+      <AdminSidebar />
+      <View style={styles.content}>
+        <AdminHeader />
+        <View style={styles.stackWrapper}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
       </View>
     </View>
   );
@@ -19,15 +24,12 @@ export default function AdminLayout() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    alignItems: 'center',
-    padding: Spacing.five,
+    flexDirection: 'row',
   },
-  card: {
+  content: {
     flex: 1,
-    width: '100%',
-    maxWidth: AdminMaxContentWidth,
-    borderRadius: Spacing.four,
-    borderWidth: 1,
-    overflow: 'hidden',
+  },
+  stackWrapper: {
+    flex: 1,
   },
 });

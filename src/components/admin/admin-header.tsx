@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/admin/avatar';
 import { ThemedText } from '@/components/themed-text';
@@ -8,8 +10,15 @@ import { useAuthStore } from '@/stores/useAuthStore';
 
 export function AdminHeader() {
   const theme = useTheme();
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  function goTo(path: '/account' | '/settings') {
+    setMenuOpen(false);
+    router.push(path);
+  }
 
   return (
     <View style={[styles.bar, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
@@ -32,8 +41,8 @@ export function AdminHeader() {
           <Pressable
             style={styles.accountRow}
             accessibilityRole="button"
-            accessibilityLabel="Log out"
-            onPress={() => void clearSession()}>
+            accessibilityLabel="Account menu"
+            onPress={() => setMenuOpen(true)}>
             <ThemedText type="small" themeColor="textSecondary">
               Signed in as <ThemedText type="smallBold">{user.name}</ThemedText>
             </ThemedText>
@@ -41,6 +50,27 @@ export function AdminHeader() {
           </Pressable>
         )}
       </View>
+
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)} />
+        <View style={[styles.menu, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <Pressable style={styles.menuItem} onPress={() => goTo('/account')}>
+            <ThemedText>Profile</ThemedText>
+          </Pressable>
+          <Pressable style={styles.menuItem} onPress={() => goTo('/settings')}>
+            <ThemedText>Settings</ThemedText>
+          </Pressable>
+          <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              void clearSession();
+            }}>
+            <ThemedText themeColor="error">Sign out</ThemedText>
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -80,5 +110,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+  },
+  menu: {
+    position: 'absolute',
+    top: 64,
+    right: Spacing.four,
+    minWidth: 180,
+    borderWidth: 1,
+    borderRadius: Spacing.three,
+    paddingVertical: Spacing.one,
+  },
+  menuItem: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+  },
+  menuDivider: {
+    height: 1,
+    marginVertical: Spacing.one,
   },
 });

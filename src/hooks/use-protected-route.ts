@@ -1,12 +1,22 @@
 import { useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { UserRole } from '@/constants/user-role.enum';
 import { VerificationStatus } from '@/constants/verification-status.enum';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 // Auth screens reachable while logged out.
-const PUBLIC_SCREENS = new Set(['login', 'register', 'forgot-password', 'reset-password']);
+const PUBLIC_SCREENS = new Set([
+  'login',
+  'admin-login',
+  'register',
+  'forgot-password',
+  'reset-password',
+]);
+// Web is primarily an admin/staff surface (see AdminMaxContentWidth in constants/theme.ts) —
+// unauthenticated visitors land on the admin console there instead of the consumer login.
+const DEFAULT_LOGGED_OUT_SCREEN = Platform.OS === 'web' ? '/admin-login' : '/login';
 // Auth screens reachable while logged in but not yet fully verified.
 const ONBOARDING_SCREENS = new Set(['verify', 'pending-verification']);
 
@@ -39,15 +49,15 @@ export function useProtectedRoute() {
 
     if (!isAuthenticated || !user) {
       if (!currentAuthScreen || !PUBLIC_SCREENS.has(currentAuthScreen)) {
-        router.replace('/login');
+        router.replace(DEFAULT_LOGGED_OUT_SCREEN);
       }
       return;
     }
 
     if (user.role === UserRole.ADMIN) {
-      // (admin) is a route group, not a URL segment — the actual path is /verifications.
+      // (admin) is a route group, not a URL segment — the actual default path is /home.
       if (!inAdminGroup) {
-        router.replace('/verifications');
+        router.replace('/home');
       }
       return;
     }

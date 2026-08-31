@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { listVerifications } from '@/api/admin.api';
-import { AdminHeader } from '@/components/admin/admin-header';
 import { Avatar } from '@/components/admin/avatar';
 import { FilterTabs } from '@/components/admin/filter-tabs';
 import { StatusBadge, statusBadgeTone } from '@/components/admin/status-badge';
@@ -77,8 +76,6 @@ export default function VerificationQueueScreen() {
 
   return (
     <View style={styles.flex}>
-      <AdminHeader />
-
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.titleRow}>
           <ThemedText type="title" style={styles.title}>
