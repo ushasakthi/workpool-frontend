@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+
+import { deleteSecureItem, readSecureItem, writeSecureItem } from './secure-storage';
 
 export const AUTH_TOKEN_STORAGE_KEY = 'workpool_auth_token';
 export const AUTH_REFRESH_TOKEN_STORAGE_KEY = 'workpool_auth_refresh_token';
@@ -15,34 +16,10 @@ export const apiClient = axios.create({
   baseURL: apiUrl,
 });
 
-// expo-secure-store has no web implementation (its web module is a stub), so every
-// call throws there — reads/writes/deletes fall back to this in-memory-only session
-// state instead of failing the request (lost on full page reload, unlike native).
-const memorySecureStore = new Map<string, string>();
-
-export async function readSecureItem(key: string): Promise<string | null> {
-  try {
-    return await SecureStore.getItemAsync(key);
-  } catch {
-    return memorySecureStore.get(key) ?? null;
-  }
-}
-
-export async function writeSecureItem(key: string, value: string): Promise<void> {
-  try {
-    await SecureStore.setItemAsync(key, value);
-  } catch {
-    memorySecureStore.set(key, value);
-  }
-}
-
-export async function deleteSecureItem(key: string): Promise<void> {
-  try {
-    await SecureStore.deleteItemAsync(key);
-  } catch {
-    memorySecureStore.delete(key);
-  }
-}
+// Re-exported so callers (useAuthStore, etc.) don't need to know storage lives in its own
+// module — secure-storage.ts is native (Keychain/Keystore), secure-storage.web.ts is web
+// (localStorage), picked automatically by the bundler's platform extension resolution.
+export { readSecureItem, writeSecureItem, deleteSecureItem };
 
 // Set by useAuthStore so this module can reset auth state on an unrecoverable 401,
 // without api/client.ts importing the store back (that would be circular — client.ts
