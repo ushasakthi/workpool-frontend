@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Icons } from '@/constants/icons';
@@ -9,15 +9,22 @@ import { useTheme } from '@/hooks/use-theme';
 interface StatusPillProps {
   label: string;
   showCheck?: boolean;
+  icon?: keyof typeof Icons;
+  tone?: 'primary' | 'neutral';
+  style?: StyleProp<ViewStyle>;
 }
 
-export function StatusPill({ label, showCheck = false }: StatusPillProps) {
+export function StatusPill({ label, showCheck = false, icon, tone = 'primary', style }: StatusPillProps) {
   const theme = useTheme();
 
+  const backgroundColor = tone === 'primary' ? theme.primarySoft : theme.backgroundElement;
+  const textColor = tone === 'primary' ? 'primarySoftText' : 'textSecondary';
+  const iconKey = showCheck ? 'checkCircle' : icon;
+
   return (
-    <View style={[styles.pill, { backgroundColor: theme.primarySoft }]}>
-      {showCheck && <SymbolView name={Icons.checkCircle} size={14} tintColor={theme.primarySoftText} />}
-      <ThemedText type="smallBold" themeColor="primarySoftText">
+    <View style={[styles.pill, { backgroundColor }, style]}>
+      {iconKey && <SymbolView name={Icons[iconKey]} size={14} tintColor={theme[textColor]} />}
+      <ThemedText type="smallBold" themeColor={textColor}>
         {label}
       </ThemedText>
     </View>

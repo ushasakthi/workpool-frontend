@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 import { Tabs, TabList, TabSlot, TabTrigger, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,17 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
+import { Icons } from '@/constants/icons';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // expo-router/unstable-native-tabs crashes on iOS 26 (async icon load racing a
 // tab-bar rebuild — see software-mansion/react-native-screens#4176), so tabs are
 // rendered with the stable JS-based Tabs API instead, same as the web fallback.
-const tabIcons = {
-  home: require('@/assets/images/tabIcons/home.png'),
-  explore: require('@/assets/images/tabIcons/explore.png'),
-} as const;
-
+// Icons are SF Symbols/Material Symbols via the app-wide Icons map (see constants/icons.ts),
+// same system used everywhere else in the app, rather than one-off raster art per tab.
 export default function AppTabs() {
   return (
     <Tabs style={styles.tabs}>
@@ -29,15 +27,14 @@ export default function AppTabs() {
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton icon="explore">Explore</TabButton>
           </TabTrigger>
-          {/* Icons pending the design step — labels only for now. */}
           <TabTrigger name="rides" href="/rides/search" asChild>
-            <TabButton>Rides</TabButton>
+            <TabButton icon="car">Rides</TabButton>
           </TabTrigger>
           <TabTrigger name="bookings" href="/bookings" asChild>
-            <TabButton>Bookings</TabButton>
+            <TabButton icon="calendar">Bookings</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>Profile</TabButton>
+            <TabButton icon="personCircle">Profile</TabButton>
           </TabTrigger>
         </AppTabBar>
       </TabList>
@@ -45,7 +42,7 @@ export default function AppTabs() {
   );
 }
 
-type TabButtonProps = TabTriggerSlotProps & { icon?: keyof typeof tabIcons };
+type TabButtonProps = TabTriggerSlotProps & { icon: keyof typeof Icons };
 
 function TabButton({ children, isFocused, icon, ...props }: TabButtonProps) {
   const theme = useTheme();
@@ -53,7 +50,7 @@ function TabButton({ children, isFocused, icon, ...props }: TabButtonProps) {
 
   return (
     <Pressable {...props} style={styles.tabButton}>
-      {icon && <Image source={tabIcons[icon]} tintColor={tintColor} style={styles.icon} />}
+      <SymbolView name={Icons[icon]} size={22} tintColor={tintColor} />
       <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
         {children}
       </ThemedText>
@@ -93,9 +90,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.half,
-  },
-  icon: {
-    width: 24,
-    height: 24,
   },
 });

@@ -102,5 +102,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: Spacing.three,
+    // On web this renders as a real <input> — suppress the browser's own focus ring since
+    // inputRow already shows focus via its border color.
+    outlineWidth: 0,
   },
 });
