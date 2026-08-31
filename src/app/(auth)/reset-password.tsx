@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -7,10 +8,12 @@ import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { StatusIcon } from '@/components/ui/status-icon';
 import { StatusPill } from '@/components/ui/status-pill';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { getErrorMessage } from '@/utils/errors';
+import { maskEmail } from '@/utils/formatters';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -22,17 +25,63 @@ export default function ResetPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [mismatch, setMismatch] = useState(false);
+  const [isTokenInvalid, setIsTokenInvalid] = useState(false);
+  const [successEmail, setSuccessEmail] = useState<string | null>(null);
 
-  if (!token) {
+  if (!token || isTokenInvalid) {
     return (
       <Screen>
-        <Banner message="This reset link is invalid or has expired. Request a new one." />
-        <Link href="/forgot-password">
-          <ThemedText type="linkPrimary" themeColor="primary" style={styles.backLinkText}>
-            Request a new link
+        <View style={styles.centeredGroup}>
+          <StatusIcon variant="error" icon="errorCircle" />
+          <ThemedText type="title" style={styles.centeredTitle}>
+            This link has expired
           </ThemedText>
-        </Link>
+          <ThemedText themeColor="textSecondary" style={styles.centeredText}>
+            Reset links are only valid for a short time. Request a new one to continue.
+          </ThemedText>
+          <Button label="Request a new link" onPress={() => router.replace('/forgot-password')} />
+          <Link href="/login" style={styles.backLink}>
+            <ThemedText type="linkPrimary" themeColor="primary" style={styles.backLinkText}>
+              Back to login
+            </ThemedText>
+          </Link>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (successEmail) {
+    return (
+      <Screen>
+        <View style={styles.centeredGroup}>
+          <StatusIcon variant="success" icon="checkCircle" />
+          <ThemedText type="title" style={styles.centeredTitle}>
+            Password updated
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.centeredText}>
+            Your password has been changed successfully.
+          </ThemedText>
+          <StatusPill
+            label={maskEmail(successEmail)}
+            icon="mail"
+            tone="neutral"
+            style={styles.emailPill}
+          />
+          <Banner
+            tone="success"
+            icon="shieldCheck"
+            message="You've been signed out of other devices for your security."
+          />
+          <ThemedText themeColor="textSecondary">
+            Didn&apos;t do this? Contact support
+          </ThemedText>
+          <Button
+            label="Go to login"
+            trailingArrow
+            onPress={() => router.replace({ pathname: '/login', params: { email: successEmail } })}
+          />
+        </View>
       </Screen>
     );
   }
@@ -41,18 +90,24 @@ export default function ResetPasswordScreen() {
 
   async function handleSubmit() {
     setError(null);
+    setMismatch(false);
 
     if (newPassword !== confirmPassword) {
       setError('Passwords don’t match.');
+      setMismatch(true);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await resetPassword(token!, newPassword);
-      setIsSuccess(true);
+      const result = await resetPassword(token!, newPassword);
+      setSuccessEmail(result.email);
     } catch (err) {
-      setError(getErrorMessage(err));
+      if (isAxiosError(err) && err.response?.status === 401) {
+        setIsTokenInvalid(true);
+      } else {
+        setError(getErrorMessage(err));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +125,6 @@ export default function ResetPasswordScreen() {
       </View>
 
       {error && <Banner message={error} />}
-      {isSuccess && <Banner message="Password updated. You can now log in." tone="success" />}
 
       <TextField
         label="New password"
@@ -79,7 +133,6 @@ export default function ResetPasswordScreen() {
         onChangeText={setNewPassword}
         isPassword
         textContentType="newPassword"
-        editable={!isSuccess}
         helperText={`Minimum ${MIN_PASSWORD_LENGTH} characters`}
       />
 
@@ -90,14 +143,10 @@ export default function ResetPasswordScreen() {
         onChangeText={setConfirmPassword}
         isPassword
         textContentType="newPassword"
-        editable={!isSuccess}
+        error={mismatch ? 'Passwords don’t match.' : undefined}
       />
 
-      {isSuccess ? (
-        <Button label="Go to login" trailingArrow onPress={() => router.replace('/login')} />
-      ) : (
-        <Button label="Update password" onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} />
-      )}
+      <Button label="Update password" onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} />
     </Screen>
   );
 }
@@ -110,7 +159,26 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
   },
+  backLink: {
+    alignSelf: 'center',
+  },
   backLinkText: {
     fontWeight: '700',
+  },
+  centeredGroup: {
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingTop: Spacing.five,
+  },
+  centeredTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+    textAlign: 'center',
+  },
+  centeredText: {
+    textAlign: 'center',
+  },
+  emailPill: {
+    alignSelf: 'center',
   },
 });

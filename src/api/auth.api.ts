@@ -11,6 +11,10 @@ interface MessageResponse {
   message: string;
 }
 
+interface ResetPasswordResponse extends MessageResponse {
+  email: string;
+}
+
 export interface RegisterInput {
   name: string;
   email: string;
@@ -40,10 +44,13 @@ export async function forgotPassword(email: string): Promise<string> {
   return response.data.data.message;
 }
 
-export async function resetPassword(token: string, newPassword: string): Promise<string> {
-  const response = await apiClient.post<SuccessResponse<MessageResponse>>('/auth/reset-password', {
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<ResetPasswordResponse> {
+  const response = await apiClient.post<SuccessResponse<ResetPasswordResponse>>('/auth/reset-password', {
     token,
     newPassword,
   });
-  return response.data.data.message;
+  return response.data.data;
 }

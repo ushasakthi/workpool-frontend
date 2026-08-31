@@ -16,9 +16,12 @@ import { getErrorMessage } from '@/utils/errors';
 export default function LoginScreen() {
   const theme = useTheme();
   const setSession = useAuthStore((state) => state.setSession);
-  const { justSubmitted } = useLocalSearchParams<{ justSubmitted?: string }>();
+  const { justSubmitted, email: prefillEmail } = useLocalSearchParams<{
+    justSubmitted?: string;
+    email?: string;
+  }>();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail ?? '');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
