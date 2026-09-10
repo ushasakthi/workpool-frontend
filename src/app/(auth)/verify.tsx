@@ -56,14 +56,29 @@ export default function VerifyScreen() {
   const [isPickerMenuOpen, setIsPickerMenuOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const normalizedLinkedinUrl = normalizeLinkedinUrl(linkedinUrl);
-  const canSubmit =
-    NIC_REGEX.test(nicNumber.trim()) &&
-    LINKEDIN_URL_REGEX.test(normalizedLinkedinUrl) &&
-    file !== null &&
-    !isSubmitting;
+  const nicValid = NIC_REGEX.test(nicNumber.trim());
+  const linkedinValid = LINKEDIN_URL_REGEX.test(normalizedLinkedinUrl);
+  const canSubmit = nicValid && linkedinValid && file !== null && !isSubmitting;
+
+  // Inline errors — shown once the field has content, or after a submit attempt,
+  // so an untouched form isn't red on first load.
+  const nicError =
+    (submitAttempted || nicNumber.trim().length > 0) && !nicValid
+      ? 'Enter a valid Sri Lankan NIC: 12 digits (e.g. 200012345678) or 9 digits + V (e.g. 912345678V).'
+      : undefined;
+  const linkedinError =
+    (submitAttempted || linkedinUrl.trim().length > 0) && !linkedinValid
+      ? 'Enter your full LinkedIn profile URL, e.g. linkedin.com/in/yourname'
+      : undefined;
+
+  const missing: string[] = [];
+  if (!file) missing.push('your NIC photo or PDF');
+  if (!nicValid) missing.push('a valid NIC number');
+  if (!linkedinValid) missing.push('your LinkedIn profile URL');
 
   function processPickedFile(candidate: PickedFileCandidate) {
     if (!ALLOWED_MIME_TYPES.includes(candidate.mimeType)) {
@@ -127,6 +142,10 @@ export default function VerifyScreen() {
   }
 
   async function handleSubmit() {
+    if (!canSubmit) {
+      setSubmitAttempted(true);
+      return;
+    }
     if (!file) return;
 
     setError(null);
@@ -178,7 +197,10 @@ export default function VerifyScreen() {
         <UploadDropzone
           fileName={file?.name}
           uploadProgress={uploadProgress}
-          error={fileError ?? undefined}
+          error={
+            fileError ??
+            (submitAttempted && !file ? 'Upload your NIC to continue.' : undefined)
+          }
           onPress={() => setIsPickerMenuOpen(true)}
         />
       </View>
@@ -213,6 +235,8 @@ export default function VerifyScreen() {
         value={nicNumber}
         onChangeText={setNicNumber}
         autoCapitalize="characters"
+        error={nicError}
+        helperText="12 digits, or 9 digits followed by V"
       />
 
       <TextField
@@ -223,12 +247,16 @@ export default function VerifyScreen() {
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
+        error={linkedinError}
+        helperText="A public link to your LinkedIn profile"
       />
 
       <View style={styles.submitGroup}>
-        <Button label="Submit for review" onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} />
+        <Button label="Submit for review" onPress={handleSubmit} loading={isSubmitting} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.footerHint}>
-          You&apos;ll be notified once your account is verified.
+          {canSubmit
+            ? "You'll be notified once your account is verified."
+            : `Still needed: ${missing.join(', ')}.`}
         </ThemedText>
       </View>
 
