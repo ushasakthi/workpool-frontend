@@ -10,15 +10,27 @@ interface StatusPillProps {
   label: string;
   showCheck?: boolean;
   icon?: keyof typeof Icons;
-  tone?: 'primary' | 'neutral';
+  tone?: 'primary' | 'neutral' | 'danger';
   style?: StyleProp<ViewStyle>;
 }
+
+const BACKGROUND_BY_TONE = {
+  primary: 'primarySoft',
+  neutral: 'backgroundElement',
+  danger: 'errorSoft',
+} as const;
+
+const TEXT_BY_TONE = {
+  primary: 'primarySoftText',
+  neutral: 'textSecondary',
+  danger: 'error',
+} as const;
 
 export function StatusPill({ label, showCheck = false, icon, tone = 'primary', style }: StatusPillProps) {
   const theme = useTheme();
 
-  const backgroundColor = tone === 'primary' ? theme.primarySoft : theme.backgroundElement;
-  const textColor = tone === 'primary' ? 'primarySoftText' : 'textSecondary';
+  const backgroundColor = theme[BACKGROUND_BY_TONE[tone]];
+  const textColor = TEXT_BY_TONE[tone];
   const iconKey = showCheck ? 'checkCircle' : icon;
 
   return (

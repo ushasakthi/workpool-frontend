@@ -8,7 +8,15 @@ import {
   setSessionExpiredHandler,
   writeSecureItem,
 } from '@/api/client';
-import { getMe } from '@/api/users.api';
+import {
+  getMe,
+  updateProfile as updateProfileRequest,
+  updateTravelProfile as updateTravelProfileRequest,
+  uploadProfilePhoto as uploadProfilePhotoRequest,
+  type ProfilePhotoFile,
+  type UpdateProfileInput,
+  type UpdateTravelProfileInput,
+} from '@/api/users.api';
 import type { AuthResult, UserProfile } from '@/types/user.types';
 
 type AuthStatus = 'idle' | 'hydrating' | 'authenticated' | 'unauthenticated';
@@ -23,6 +31,9 @@ interface AuthState {
   setSession: (result: AuthResult) => Promise<void>;
   clearSession: () => Promise<void>;
   refreshMe: () => Promise<void>;
+  updateProfile: (input: UpdateProfileInput) => Promise<void>;
+  updateTravelProfile: (input: UpdateTravelProfileInput) => Promise<void>;
+  uploadProfilePhoto: (file: ProfilePhotoFile) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -84,6 +95,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   refreshMe: async () => {
     const user = await getMe();
+    set({ user });
+  },
+
+  updateProfile: async (input) => {
+    const user = await updateProfileRequest(input);
+    set({ user });
+  },
+
+  updateTravelProfile: async (input) => {
+    const user = await updateTravelProfileRequest(input);
+    set({ user });
+  },
+
+  uploadProfilePhoto: async (file) => {
+    const user = await uploadProfilePhotoRequest(file);
     set({ user });
   },
 }));
