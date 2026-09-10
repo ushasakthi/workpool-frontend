@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { UserRole } from '@/constants/user-role.enum';
 import type { AuthResult } from '@/types/user.types';
 
 interface SuccessResponse<T> {
@@ -20,6 +21,7 @@ export interface RegisterInput {
   email: string;
   password: string;
   phone: string;
+  role?: UserRole;
 }
 
 export interface LoginInput {

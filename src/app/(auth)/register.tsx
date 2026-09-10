@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { register } from '@/api/auth.api';
+import { RoleChoice } from '@/components/auth/role-choice';
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
+import { UserRole } from '@/constants/user-role.enum';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { getErrorMessage } from '@/utils/errors';
@@ -25,6 +27,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<UserRole>(UserRole.PASSENGER);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +60,7 @@ export default function RegisterScreen() {
         email: email.trim(),
         phone: `+94${phoneDigits}`,
         password,
+        role,
       });
       // Navigation is handled by the root auth gate once the store updates.
       await setSession(result);
@@ -119,6 +123,14 @@ export default function RegisterScreen() {
         textContentType="newPassword"
         helperText={`Minimum ${MIN_PASSWORD_LENGTH} characters`}
       />
+
+      <View style={styles.fieldGroup}>
+        <ThemedText type="smallBold">I want to</ThemedText>
+        <RoleChoice value={role} onChange={setRole} />
+        <ThemedText type="small" themeColor="textSecondary">
+          You can change this later in your profile.
+        </ThemedText>
+      </View>
 
       <Checkbox checked={agreedToTerms} onChange={setAgreedToTerms}>
         I agree to the <ThemedText type="smallBold">Terms & Conditions</ThemedText> and{' '}
