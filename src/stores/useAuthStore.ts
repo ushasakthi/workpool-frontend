@@ -6,6 +6,7 @@ import {
   deleteSecureItem,
   readSecureItem,
   setSessionExpiredHandler,
+  setTokenRefreshedHandler,
   writeSecureItem,
 } from '@/api/client';
 import {
@@ -58,9 +59,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
+    // set before getMe: if it refreshes the token, the refresh handler replaces these
+    set({ token, refreshToken });
     try {
       const user = await getMe();
-      set({ status: 'authenticated', token, refreshToken, user, isAuthenticated: true });
+      set({ status: 'authenticated', user, isAuthenticated: true });
     } catch {
       // token expired or invalid, clear it
       await Promise.all([
@@ -124,4 +127,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 // if the token refresh fails, log out so the user goes back to login
 setSessionExpiredHandler(() => {
   void useAuthStore.getState().clearSession();
+});
+
+// keep the store's copy in step with secure storage after a refresh
+setTokenRefreshedHandler((token, refreshToken) => {
+  useAuthStore.setState({ token, refreshToken });
 });

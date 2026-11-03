@@ -52,6 +52,12 @@ export function setSessionExpiredHandler(handler: () => void): void {
   handleSessionExpired = handler;
 }
 
+// also set by useAuthStore, so photo requests (expo-image) get the new token too
+let handleTokenRefreshed: ((accessToken: string, refreshToken: string) => void) | null = null;
+export function setTokenRefreshedHandler(handler: (accessToken: string, refreshToken: string) => void): void {
+  handleTokenRefreshed = handler;
+}
+
 apiClient.interceptors.request.use(async (config) => {
   const token = await readSecureItem(AUTH_TOKEN_STORAGE_KEY);
   if (token) {
@@ -77,6 +83,7 @@ async function performRefresh(): Promise<string | null> {
       writeSecureItem(AUTH_TOKEN_STORAGE_KEY, accessToken),
       writeSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY, newRefreshToken),
     ]);
+    handleTokenRefreshed?.(accessToken, newRefreshToken);
     return accessToken;
   } catch {
     return null;
