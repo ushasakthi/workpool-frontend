@@ -11,17 +11,19 @@ interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   children: ReactNode;
+  disabled?: boolean;
 }
 
-export function Checkbox({ checked, onChange, children }: CheckboxProps) {
+export function Checkbox({ checked, onChange, children, disabled = false }: CheckboxProps) {
   const theme = useTheme();
 
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
+      accessibilityState={{ checked, disabled }}
+      disabled={disabled}
       onPress={() => onChange(!checked)}
-      style={styles.row}>
+      style={[styles.row, disabled && styles.disabled]}>
       <View
         style={[
           styles.box,
@@ -56,5 +58,8 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

@@ -22,6 +22,8 @@ export interface RegisterInput {
   password: string;
   phone: string;
   role?: UserRole;
+  // the backend refuses anything but true
+  acceptedTerms: true;
 }
 
 export interface LoginInput {

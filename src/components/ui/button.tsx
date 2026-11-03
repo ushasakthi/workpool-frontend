@@ -44,7 +44,9 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      onPress={isDisabled ? undefined : onPress}
+      // also marks it disabled for screen readers on web (aria-disabled)
+      disabled={isDisabled}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.base,
         { backgroundColor: backgroundColor[variant] },

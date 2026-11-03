@@ -4,10 +4,10 @@ import { StyleSheet, TextInput, View } from 'react-native';
 
 import { register } from '@/api/auth.api';
 import { RoleChoice } from '@/components/auth/role-choice';
+import { TermsStep } from '@/components/auth/terms-step';
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
@@ -28,31 +28,29 @@ export default function RegisterScreen() {
   const [phoneLocal, setPhoneLocal] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>(UserRole.PASSENGER);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // two steps on one screen, so the typed password never leaves this component
+  const [step, setStep] = useState<'details' | 'terms'>('details');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const phoneDigits = phoneLocal.replace(/\D/g, '');
-  const canSubmit =
+  const canContinue =
     name.trim().length > 0 &&
     email.trim().length > 0 &&
     phoneDigits.length >= MIN_PHONE_DIGITS &&
-    password.length >= MIN_PASSWORD_LENGTH &&
-    agreedToTerms &&
-    !isSubmitting;
+    password.length >= MIN_PASSWORD_LENGTH;
 
-  async function handleRegister() {
+  function handleContinue() {
     setError(null);
-
-    if (!agreedToTerms) {
-      setError('Please agree to the Terms & Conditions and Privacy Policy to continue.');
-      return;
-    }
     if (phoneDigits.length < MIN_PHONE_DIGITS) {
       setError('Enter a valid phone number.');
       return;
     }
+    setStep('terms');
+  }
 
+  async function handleRegister() {
+    setError(null);
     setIsSubmitting(true);
     try {
       const result = await register({
@@ -61,13 +59,30 @@ export default function RegisterScreen() {
         phone: `+94${phoneDigits}`,
         password,
         role,
+        acceptedTerms: true,
       });
-      // Navigation is handled by the root auth gate once the store updates.
+      // the auth gate handles the redirect
       await setSession(result);
     } catch (err) {
       setError(getErrorMessage(err));
       setIsSubmitting(false);
     }
+  }
+
+  if (step === 'terms') {
+    return (
+      <Screen>
+        <TermsStep
+          submitting={isSubmitting}
+          error={error}
+          onBack={() => {
+            setError(null);
+            setStep('details');
+          }}
+          onAccept={() => void handleRegister()}
+        />
+      </Screen>
+    );
   }
 
   return (
@@ -132,12 +147,7 @@ export default function RegisterScreen() {
         </ThemedText>
       </View>
 
-      <Checkbox checked={agreedToTerms} onChange={setAgreedToTerms}>
-        I agree to the <ThemedText type="smallBold">Terms & Conditions</ThemedText> and{' '}
-        <ThemedText type="smallBold">Privacy Policy</ThemedText>.
-      </Checkbox>
-
-      <Button label="Create account" onPress={handleRegister} disabled={!canSubmit} loading={isSubmitting} />
+      <Button label="Continue" trailingArrow onPress={handleContinue} disabled={!canContinue} />
 
       <View style={styles.footerRow}>
         <ThemedText themeColor="textSecondary">Already have an account? </ThemedText>
