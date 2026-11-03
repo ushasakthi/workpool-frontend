@@ -1,29 +1,28 @@
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
-import type { CreateRideInput } from '@/api/rides.api';
-import { ThemedText } from '@/components/themed-text';
-import { DaySelector } from '@/components/travel/day-selector';
-import { MapLocationField } from '@/components/travel/map-location-field';
-import { TimeField } from '@/components/travel/time-field';
-import { Banner } from '@/components/ui/banner';
-import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/ui/text-field';
-import { SeatsField } from '@/components/vehicle/seats-field';
-import { Spacing } from '@/constants/theme';
-import { Weekday } from '@/constants/weekday.enum';
-import { useTheme } from '@/hooks/use-theme';
-import { useRideStore } from '@/stores/useRideStore';
-import type { Ride } from '@/types/ride.types';
-import type { GeoPoint } from '@/types/user.types';
-import type { Vehicle } from '@/types/vehicle.types';
-import { getErrorMessage } from '@/utils/errors';
-import { nextOccurrence, timeOfDayFromISO } from '@/utils/schedule';
+import type { CreateRideInput } from "@/api/rides.api";
+import { ThemedText } from "@/components/themed-text";
+import { DaySelector } from "@/components/travel/day-selector";
+import { MapLocationField } from "@/components/travel/map-location-field";
+import { TimeField } from "@/components/travel/time-field";
+import { Banner } from "@/components/ui/banner";
+import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
+import { SeatsField } from "@/components/vehicle/seats-field";
+import { Spacing } from "@/constants/theme";
+import { Weekday } from "@/constants/weekday.enum";
+import { useTheme } from "@/hooks/use-theme";
+import { useRideStore } from "@/stores/useRideStore";
+import type { Ride } from "@/types/ride.types";
+import type { GeoPoint } from "@/types/user.types";
+import type { Vehicle } from "@/types/vehicle.types";
+import { getErrorMessage } from "@/utils/errors";
+import { nextOccurrence, timeOfDayFromISO } from "@/utils/schedule";
 
 interface RideFormProps {
-  /** The driver's active vehicles — guaranteed non-empty by the screen. */
   vehicles: Vehicle[];
-  /** Present when editing an existing ride. */
+  // only set when editing
   ride?: Ride;
   onDone: () => void;
 }
@@ -48,16 +47,26 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
     ride?.vehicleId ?? vehicles[0].id,
   );
   const [cost, setCost] = useState<string>(
-    ride ? String(ride.costContribution) : '',
+    ride ? String(ride.costContribution) : "",
   );
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
+
+  function handleVehicleChange(vehicle: Vehicle) {
+    setVehicleId(vehicle.id);
+    // the old seat count may not fit the new car
+    if (seats !== undefined && seats > vehicle.seatsAvailable) {
+      setSeats(undefined);
+    }
+  }
+
   function submitLabel(): string {
-    if (isSaving) return ride ? 'Saving…' : 'Posting…';
-    if (saveError) return 'Try again';
-    return ride ? 'Save changes' : 'Post a ride';
+    if (isSaving) return ride ? "Saving…" : "Posting…";
+    if (saveError) return "Try again";
+    return ride ? "Save changes" : "Post a ride";
   }
 
   const costNum = Number(cost);
@@ -141,7 +150,8 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
         <ThemedText
           type="smallBold"
           themeColor="textSecondary"
-          style={styles.sectionLabel}>
+          style={styles.sectionLabel}
+        >
           DAYS
         </ThemedText>
         <DaySelector value={days} onChange={setDays} size="medium" />
@@ -152,7 +162,8 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
           <ThemedText
             type="smallBold"
             themeColor="textSecondary"
-            style={styles.sectionLabel}>
+            style={styles.sectionLabel}
+          >
             VEHICLE
           </ThemedText>
           <View style={styles.vehicleRow}>
@@ -163,16 +174,18 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
                   key={vehicle.id}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
-                  onPress={() => setVehicleId(vehicle.id)}
+                  onPress={() => handleVehicleChange(vehicle)}
                   style={[
                     styles.vehicleChip,
                     { borderColor: selected ? theme.primary : theme.border },
                     selected && { backgroundColor: theme.primarySoft },
-                  ]}>
+                  ]}
+                >
                   <ThemedText
                     type="smallBold"
-                    themeColor={selected ? 'primary' : 'textSecondary'}>
-                    {vehicle.make} {vehicle.model}
+                    themeColor={selected ? "primary" : "textSecondary"}
+                  >
+                    {vehicle.make} {vehicle.model} · {vehicle.plateNumber}
                   </ThemedText>
                 </Pressable>
               );
@@ -181,7 +194,12 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
         </View>
       )}
 
-      <SeatsField label="Seats available" value={seats} onChange={setSeats} />
+      <SeatsField
+        label="Seats available"
+        value={seats}
+        onChange={setSeats}
+        max={selectedVehicle?.seatsAvailable}
+      />
 
       <TextField
         label="Cost contribution per rider"
@@ -210,8 +228,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   vehicleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.two,
   },
   vehicleChip: {

@@ -1,11 +1,11 @@
-import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { SymbolView } from "expo-symbols";
+import { useState } from "react";
+import { FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
 
-import { ThemedText } from '@/components/themed-text';
-import { Icons } from '@/constants/icons';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ThemedText } from "@/components/themed-text";
+import { Icons } from "@/constants/icons";
+import { Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 // Backend CreateVehicleDto caps seatsAvailable at 8.
 const SEAT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -15,33 +15,41 @@ interface SeatsFieldProps {
   value?: number;
   onChange: (value: number) => void;
   error?: string;
+  max?: number;
 }
 
 function seatLabel(n: number): string {
-  return `${n} seat${n === 1 ? '' : 's'}`;
+  return `${n} seat${n === 1 ? "" : "s"}`;
 }
 
-// Same bottom-sheet picker pattern as components/travel/time-field.tsx.
-export function SeatsField({ label, value, onChange, error }: SeatsFieldProps) {
+export function SeatsField({
+  label,
+  value,
+  onChange,
+  error,
+  max = 8,
+}: SeatsFieldProps) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const options = SEAT_OPTIONS.filter((n) => n <= max);
 
   return (
     <View style={styles.container}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${value ? seatLabel(value) : 'Select seats'}`}
+        accessibilityLabel={`${label}: ${value ? seatLabel(value) : "Select seats"}`}
         onPress={() => setIsOpen(true)}
         style={[
           styles.trigger,
           {
             backgroundColor: theme.backgroundElement,
-            borderColor: error ? theme.error : 'transparent',
+            borderColor: error ? theme.error : "transparent",
           },
-        ]}>
-        <ThemedText themeColor={value ? 'text' : 'placeholder'}>
-          {value ? seatLabel(value) : 'Select seats'}
+        ]}
+      >
+        <ThemedText themeColor={value ? "text" : "placeholder"}>
+          {value ? seatLabel(value) : "Select seats"}
         </ThemedText>
         <SymbolView
           name={Icons.chevronDown}
@@ -59,14 +67,15 @@ export function SeatsField({ label, value, onChange, error }: SeatsFieldProps) {
         transparent
         animationType="fade"
         visible={isOpen}
-        onRequestClose={() => setIsOpen(false)}>
+        onRequestClose={() => setIsOpen(false)}
+      >
         <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)}>
           <View style={[styles.sheet, { backgroundColor: theme.background }]}>
             <ThemedText type="smallBold" style={styles.sheetTitle}>
               {label}
             </ThemedText>
             <FlatList
-              data={SEAT_OPTIONS}
+              data={options}
               keyExtractor={(item) => String(item)}
               style={styles.list}
               renderItem={({ item }) => {
@@ -82,10 +91,12 @@ export function SeatsField({ label, value, onChange, error }: SeatsFieldProps) {
                     style={[
                       styles.option,
                       selected && { backgroundColor: theme.primarySoft },
-                    ]}>
+                    ]}
+                  >
                     <ThemedText
-                      type={selected ? 'smallBold' : 'small'}
-                      themeColor={selected ? 'primary' : 'text'}>
+                      type={selected ? "smallBold" : "small"}
+                      themeColor={selected ? "primary" : "text"}
+                    >
                       {seatLabel(item)}
                     </ThemedText>
                     {selected && (
@@ -111,9 +122,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   trigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderRadius: Spacing.three,
     borderWidth: 1.5,
     paddingHorizontal: Spacing.three,
@@ -121,27 +132,27 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
     borderTopLeftRadius: Spacing.four,
     borderTopRightRadius: Spacing.four,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.five,
-    maxHeight: '70%',
+    maxHeight: "70%",
   },
   sheetTitle: {
-    textAlign: 'center',
+    textAlign: "center",
     paddingBottom: Spacing.two,
   },
   list: {
     paddingHorizontal: Spacing.three,
   },
   option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.two,

@@ -8,6 +8,7 @@ import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StateMessage } from '@/components/ui/state-message';
 import { VehicleCard } from '@/components/vehicle/vehicle-card';
 import { VehicleForm } from '@/components/vehicle/vehicle-form';
 import { Icons } from '@/constants/icons';
@@ -179,41 +180,18 @@ function ListHeader({ onAdd }: { onAdd: () => void }) {
 }
 
 function VehicleEmptyState({ onAdd }: { onAdd: () => void }) {
-  const theme = useTheme();
   return (
-    <View style={styles.emptyWrap}>
-      <View style={[styles.emptyIcon, { backgroundColor: theme.primarySoft }]}>
-        <SymbolView name={Icons.car} size={28} tintColor={theme.primary} />
-      </View>
-      <ThemedText type="smallBold" style={styles.emptyTitle}>
-        No vehicle added yet
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-        Add your car so coworkers can join your shared rides.
-      </ThemedText>
-      <View style={styles.emptyCta}>
-        <Button label="Add vehicle" onPress={onAdd} />
-      </View>
-    </View>
+    <StateMessage
+      icon="car"
+      title="No vehicle added yet"
+      message="Add your car so coworkers can join your shared rides."
+      action={{ label: 'Add vehicle', onPress: onAdd }}
+    />
   );
 }
 
 function NoticeBlock({ title, body }: { title: string; body: string }) {
-  const theme = useTheme();
-  return (
-    <View style={styles.emptyWrap}>
-      <View
-        style={[styles.emptyIcon, { backgroundColor: theme.backgroundElement }]}>
-        <SymbolView name={Icons.car} size={28} tintColor={theme.textSecondary} />
-      </View>
-      <ThemedText type="smallBold" style={styles.emptyTitle}>
-        {title}
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-        {body}
-      </ThemedText>
-    </View>
-  );
+  return <StateMessage icon="car" tone="neutral" title={title} message={body} />;
 }
 
 function VehicleListSkeleton() {
@@ -258,28 +236,5 @@ const styles = StyleSheet.create({
   },
   loadErrorGroup: {
     gap: Spacing.three,
-  },
-  emptyWrap: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.six,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
-  emptyTitle: {
-    fontSize: 18,
-  },
-  emptyBody: {
-    textAlign: 'center',
-  },
-  emptyCta: {
-    alignSelf: 'stretch',
-    paddingTop: Spacing.three,
   },
 });

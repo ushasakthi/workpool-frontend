@@ -7,9 +7,9 @@ import { RideCard } from '@/components/rides/ride-card';
 import { RidesSegment } from '@/components/rides/rides-segment';
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
-import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StateMessage } from '@/components/ui/state-message';
 import { Icons } from '@/constants/icons';
 import { RideStatus } from '@/constants/ride-status.enum';
 import { Spacing } from '@/constants/theme';
@@ -64,14 +64,14 @@ export default function MyRidesScreen() {
   }
 
   return (
-    <Screen header={<RidesSegment />} underTabBar>
+    <Screen header={<RidesSegment active="my-rides" />} underTabBar>
       <ListHeader onAdd={() => router.push('/rides/post')} />
 
       {actionError && <Banner message={actionError} />}
 
       {rides === null ? (
         loadError ? (
-          <LoadError onRetry={retryLoad} />
+          <LoadError message={loadError} onRetry={retryLoad} />
         ) : (
           <MyRidesSkeleton />
         )
@@ -228,41 +228,26 @@ function FooterButton({
   );
 }
 
-function LoadError({ onRetry }: { onRetry: () => void }) {
-  const theme = useTheme();
+function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View style={styles.stateWrap}>
-      <SymbolView name={Icons.wifiSlash} size={30} tintColor={theme.error} />
-      <ThemedText type="smallBold" style={styles.stateTitle}>
-        Couldn&apos;t load your rides
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.stateBody}>
-        Check your connection and try again.
-      </ThemedText>
-      <View style={styles.stateCta}>
-        <Button label="Retry" variant="soft" onPress={onRetry} />
-      </View>
-    </View>
+    <StateMessage
+      icon="wifiSlash"
+      tone="error"
+      title="Couldn't load your rides"
+      message={message}
+      action={{ label: 'Try again', variant: 'soft', onPress: onRetry }}
+    />
   );
 }
 
 function MyRidesEmpty({ onPost }: { onPost: () => void }) {
-  const theme = useTheme();
   return (
-    <View style={styles.stateWrap}>
-      <View style={[styles.emptyIcon, { backgroundColor: theme.primarySoft }]}>
-        <SymbolView name={Icons.route} size={28} tintColor={theme.primary} />
-      </View>
-      <ThemedText type="smallBold" style={styles.stateTitle}>
-        You haven&apos;t posted a ride yet
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.stateBody}>
-        Post your commute so coworkers can join and split the cost.
-      </ThemedText>
-      <View style={styles.stateCta}>
-        <Button label="Post a ride" onPress={onPost} />
-      </View>
-    </View>
+    <StateMessage
+      icon="route"
+      title="You haven't posted a ride yet"
+      message="Post your commute so coworkers can join and split the cost."
+      action={{ label: 'Post a ride', onPress: onPost }}
+    />
   );
 }
 
@@ -308,28 +293,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     borderRadius: Spacing.two,
-  },
-  stateWrap: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.five,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
-  stateTitle: {
-    fontSize: 18,
-  },
-  stateBody: {
-    textAlign: 'center',
-  },
-  stateCta: {
-    alignSelf: 'stretch',
-    paddingTop: Spacing.three,
   },
 });

@@ -25,6 +25,9 @@ export const Colors = {
     errorSoft: '#FBE4E1',
     warning: '#8A6D1D',
     warningSoft: '#F5EBD3',
+    // gold used for match scores and route markers
+    accent: '#A87B26',
+    accentSoft: '#F6ECD5',
   },
   dark: {
     text: '#ffffff',
@@ -43,6 +46,8 @@ export const Colors = {
     errorSoft: '#3B211F',
     warning: '#D8B863',
     warningSoft: '#3A311C',
+    accent: '#D8B863',
+    accentSoft: '#3A311C',
   },
 } as const;
 
@@ -85,6 +90,5 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
-// Admin screens are a desktop-oriented working tool (wide tables, dense info) rather
-// than the mobile-first consumer app, so they get a much wider content column.
+// Admin screens are for desktop, so allow wider content
 export const AdminMaxContentWidth = 1280;

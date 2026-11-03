@@ -1,13 +1,13 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { RideForm } from '@/components/rides/ride-form';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StateMessage } from '@/components/ui/state-message';
 import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
 import { UserRole } from '@/constants/user-role.enum';
@@ -80,22 +80,13 @@ function BackHeader({ onBack }: { onBack: () => void }) {
 }
 
 function NoVehicleState({ onAdd }: { onAdd: () => void }) {
-  const theme = useTheme();
   return (
-    <View style={styles.emptyWrap}>
-      <View style={[styles.emptyIcon, { backgroundColor: theme.primarySoft }]}>
-        <SymbolView name={Icons.car} size={28} tintColor={theme.primary} />
-      </View>
-      <ThemedText type="smallBold" style={styles.emptyTitle}>
-        Add a vehicle first
-      </ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
-        You&apos;ll need a vehicle on file before you can post a ride.
-      </ThemedText>
-      <View style={styles.emptyCta}>
-        <Button label="Add vehicle" onPress={onAdd} />
-      </View>
-    </View>
+    <StateMessage
+      icon="car"
+      title="Add a vehicle first"
+      message="You'll need a vehicle on file before you can post a ride."
+      action={{ label: 'Add vehicle', onPress: onAdd }}
+    />
   );
 }
 
@@ -124,28 +115,5 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     lineHeight: 38,
-  },
-  emptyWrap: {
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingTop: Spacing.six,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
-  emptyTitle: {
-    fontSize: 18,
-  },
-  emptyBody: {
-    textAlign: 'center',
-  },
-  emptyCta: {
-    alignSelf: 'stretch',
-    paddingTop: Spacing.three,
   },
 });

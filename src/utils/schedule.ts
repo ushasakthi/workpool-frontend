@@ -22,9 +22,8 @@ const DAY_JS_INDEX: Record<Weekday, number> = {
   [Weekday.SAT]: 6,
 };
 
-// The soonest instant strictly after `from` that falls on one of `days` at `hhmm`.
-// The backend stores an absolute `departureTime`; the form only asks for a
-// recurring time-of-day + weekdays, so this derives the next real occurrence.
+// Next date after `from` on one of `days` at `hhmm`.
+// The backend needs a real date, the form only has a time + weekdays.
 export function nextOccurrence(
   hhmm: string,
   days: Weekday[],
@@ -44,7 +43,7 @@ export function nextOccurrence(
     }
   }
 
-  // Unreachable when `days` is non-empty; keeps the return type total.
+  // only reached if days is empty
   const fallback = new Date(from);
   fallback.setDate(from.getDate() + 1);
   fallback.setHours(hours, minutes, 0, 0);
@@ -58,14 +57,19 @@ export function timeOfDayFromISO(iso: string): string {
   return `${hours}:${minutes}`;
 }
 
+// "Mo Tu We Th Fr"
+export function formatDays(daysOfWeek: Weekday[]): string {
+  return ORDERED.filter((day) => daysOfWeek.includes(day))
+    .map((day) => day.slice(0, 2))
+    .join(' ');
+}
+
 // "Mo Tu We Th Fr · 8:15 AM"
 export function formatRideSchedule(
   daysOfWeek: Weekday[],
   departureTimeISO: string,
 ): string {
-  const days = ORDERED.filter((day) => daysOfWeek.includes(day))
-    .map((day) => day.slice(0, 2))
-    .join(' ');
+  const days = formatDays(daysOfWeek);
   const time = formatHhMmForDisplay(timeOfDayFromISO(departureTimeISO));
   return days ? `${days} · ${time}` : time;
 }

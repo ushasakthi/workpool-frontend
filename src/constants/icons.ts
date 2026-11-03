@@ -1,5 +1,4 @@
-// expo-symbols renders SF Symbols on iOS and Material Symbols on Android/web —
-// every name here has been checked against both platforms' valid symbol sets.
+// SF Symbols on iOS, Material Symbols on Android/web
 export const Icons = {
   eyeShow: { ios: 'eye', android: 'visibility', web: 'visibility' },
   eyeHide: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' },
@@ -37,4 +36,23 @@ export const Icons = {
   wifiSlash: { ios: 'wifi.slash', android: 'wifi_off', web: 'wifi_off' },
   route: { ios: 'map', android: 'route', web: 'route' },
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' },
+  locationSlash: { ios: 'location.slash', android: 'location_off', web: 'location_off' },
+  person: { ios: 'person', android: 'person', web: 'person' },
+  flag: { ios: 'flag', android: 'flag', web: 'flag' },
+  xmarkCircle: { ios: 'xmark.circle', android: 'cancel', web: 'cancel' },
+  send: { ios: 'paperplane', android: 'send', web: 'send' },
+  inbox: { ios: 'tray', android: 'inbox', web: 'inbox' },
+  minus: { ios: 'minus', android: 'remove', web: 'remove' },
+  star: { ios: 'star', android: 'star_border', web: 'star_border' },
+  starFill: { ios: 'star.fill', android: 'star', web: 'star' },
+  lock: { ios: 'lock', android: 'lock', web: 'lock' },
+  idCard: { ios: 'person.text.rectangle', android: 'badge', web: 'badge' },
+  building: { ios: 'building.2', android: 'apartment', web: 'apartment' },
+  chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
+  chevronLeft: { ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' },
+  chevronUp: { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' },
+  savings: { ios: 'banknote', android: 'savings', web: 'savings' },
+  search: { ios: 'magnifyingglass', android: 'search', web: 'search' },
+  searchOff: { ios: 'magnifyingglass', android: 'search_off', web: 'search_off' },
+  history: { ios: 'clock.arrow.circlepath', android: 'history', web: 'history' },
 } as const;
