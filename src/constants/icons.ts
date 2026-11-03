@@ -4,6 +4,7 @@ export const Icons = {
   eyeHide: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' },
   cloudUpload: { ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' },
   checkCircle: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
+  circle: { ios: 'circle', android: 'radio_button_unchecked', web: 'radio_button_unchecked' },
   clock: { ios: 'clock', android: 'schedule', web: 'schedule' },
   errorCircle: { ios: 'exclamationmark.circle', android: 'error', web: 'error' },
   infoCircle: { ios: 'info.circle', android: 'info', web: 'info' },

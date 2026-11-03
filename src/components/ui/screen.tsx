@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
@@ -18,9 +18,12 @@ interface ScreenProps {
   header?: ReactNode;
   // adds space for the tab bar
   underTabBar?: boolean;
+  // pass onRefresh to turn on pull-to-refresh
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
-export function Screen({ children, header, underTabBar = false }: ScreenProps) {
+export function Screen({ children, header, underTabBar = false, refreshing = false, onRefresh }: ScreenProps) {
   const topInset = underTabBar && Platform.OS === 'web' ? TAB_BAR_WEB_TOP_INSET : 0;
   const bottomInset = underTabBar ? TAB_BAR_BOTTOM_INSET : 0;
 
@@ -37,7 +40,10 @@ export function Screen({ children, header, underTabBar = false }: ScreenProps) {
               !header && { paddingTop: CONTENT_PADDING_TOP + topInset },
               { paddingBottom: CONTENT_PADDING_BOTTOM + bottomInset },
             ]}
-            keyboardShouldPersistTaps="handled">
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined
+            }>
             {children}
           </ScrollView>
         </SafeAreaView>

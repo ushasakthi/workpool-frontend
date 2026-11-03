@@ -44,6 +44,15 @@ export function shiftMonth(month: string, by: number): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+// "2026-10" -> "October"
+export function formatMonthName(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, monthNumber - 1, 1)).toLocaleDateString('en-US', {
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
 // "2026-10" -> "October 2026"
 export function formatMonth(month: string): string {
   const [year, monthNumber] = month.split('-').map(Number);

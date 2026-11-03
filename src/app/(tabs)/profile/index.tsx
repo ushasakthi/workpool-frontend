@@ -101,15 +101,6 @@ export default function ProfileScreen() {
         onPress={() => router.push('/profile/emergency-contact')}
       />
 
-      {user.role !== UserRole.ADMIN && (
-        <NavLink
-          icon="savings"
-          title="Your savings"
-          subtitle="What sharing your commute saves each month"
-          onPress={() => router.push('/profile/savings')}
-        />
-      )}
-
       <LogoutButton />
     </Screen>
   );
