@@ -50,7 +50,7 @@ export default function RideSearchScreen() {
 
       {/* the backend scores rides from your home location, so it's required */}
       {!home ? (
-        <NoHomeState onSetUp={() => router.push('/profile/travel-profile')} />
+        <NoHomeState onSetUp={() => router.push('/commute/travel-profile')} />
       ) : (
         <>
           <RouteSummary from={home.label ?? 'Home'} to={work?.label ?? 'Work'} />

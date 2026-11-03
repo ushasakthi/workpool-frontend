@@ -10,7 +10,7 @@ interface StatusPillProps {
   label: string;
   showCheck?: boolean;
   icon?: keyof typeof Icons;
-  tone?: 'primary' | 'neutral' | 'danger';
+  tone?: 'primary' | 'neutral' | 'danger' | 'warning';
   style?: StyleProp<ViewStyle>;
 }
 
@@ -18,12 +18,14 @@ const BACKGROUND_BY_TONE = {
   primary: 'primarySoft',
   neutral: 'backgroundElement',
   danger: 'errorSoft',
+  warning: 'warningSoft',
 } as const;
 
 const TEXT_BY_TONE = {
   primary: 'primarySoftText',
   neutral: 'textSecondary',
   danger: 'error',
+  warning: 'warning',
 } as const;
 
 export function StatusPill({ label, showCheck = false, icon, tone = 'primary', style }: StatusPillProps) {

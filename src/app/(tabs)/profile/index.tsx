@@ -95,13 +95,6 @@ export default function ProfileScreen() {
       </View>
 
       <NavLink
-        icon="mapPin"
-        title="Travel profile"
-        subtitle="Commute, schedule, and availability"
-        onPress={() => router.push('/profile/travel-profile')}
-      />
-
-      <NavLink
         icon="emergency"
         title="Emergency contact"
         subtitle={user.emergencyContact?.name ?? 'Not set'}
@@ -114,15 +107,6 @@ export default function ProfileScreen() {
           title="Your savings"
           subtitle="What sharing your commute saves each month"
           onPress={() => router.push('/profile/savings')}
-        />
-      )}
-
-      {(user.role === UserRole.DRIVER || user.role === UserRole.BOTH) && (
-        <NavLink
-          icon="car"
-          title="Vehicle"
-          subtitle="Cars you offer for shared rides"
-          onPress={() => router.push('/profile/vehicle')}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -27,14 +27,34 @@ type ScreenView =
   | { mode: 'add' }
   | { mode: 'edit'; vehicle: Vehicle };
 
+// the Commute tab can open the add form, or one vehicle's edit form, directly
+function initialView(vehicles: Vehicle[] | null, mode?: string, vehicleId?: string): ScreenView {
+  if (mode === 'add') return { mode: 'add' };
+  const vehicle = vehicles?.find((item) => item.id === vehicleId);
+  return vehicle ? { mode: 'edit', vehicle } : { mode: 'list' };
+}
+
 export default function VehicleScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string; vehicleId?: string }>();
   const user = useAuthStore((state) => state.user);
   const vehicles = useVehicleStore((state) => state.vehicles);
   const load = useVehicleStore((state) => state.load);
   const setActive = useVehicleStore((state) => state.setActive);
 
-  const [view, setView] = useState<ScreenView>({ mode: 'list' });
+  const [view, setView] = useState<ScreenView>(() =>
+    initialView(vehicles, params.mode, params.vehicleId),
+  );
+  // opened straight into a form: closing it goes back to Commute, not to the list
+  const [openedInForm] = useState(view.mode !== 'list');
+
+  function closeForm() {
+    if (openedInForm) {
+      router.back();
+    } else {
+      setView({ mode: 'list' });
+    }
+  }
   const [loadError, setLoadError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
@@ -87,14 +107,14 @@ export default function VehicleScreen() {
   if (view.mode !== 'list') {
     return (
       <Screen
-        header={<BackHeader onBack={() => setView({ mode: 'list' })} />}
+        header={<BackHeader onBack={closeForm} />}
         underTabBar>
         <ThemedText type="title" style={styles.title}>
           {view.mode === 'add' ? 'Add vehicle' : 'Edit vehicle'}
         </ThemedText>
         <VehicleForm
           vehicle={view.mode === 'edit' ? view.vehicle : undefined}
-          onDone={() => setView({ mode: 'list' })}
+          onDone={closeForm}
         />
       </Screen>
     );

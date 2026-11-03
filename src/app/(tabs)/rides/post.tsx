@@ -53,7 +53,7 @@ export default function PostRideScreen() {
       {loading ? (
         <FormSkeleton />
       ) : activeVehicles.length === 0 ? (
-        <NoVehicleState onAdd={() => router.push('/profile/vehicle')} />
+        <NoVehicleState onAdd={() => router.push('/commute/vehicle')} />
       ) : (
         <RideForm
           vehicles={activeVehicles}
