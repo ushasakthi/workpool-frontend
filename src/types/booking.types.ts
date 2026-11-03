@@ -49,6 +49,7 @@ export interface Savings {
     contributions: number;
     saved: number;
     avgContribution: number;
+    co2SavedKg: number;
   };
   asDriver: {
     rides: number;
@@ -57,5 +58,6 @@ export interface Savings {
     costsShared: number;
     yourShare: number;
     avgShared: number;
+    co2SavedKg: number;
   };
 }

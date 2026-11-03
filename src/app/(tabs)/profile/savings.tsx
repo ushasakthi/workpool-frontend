@@ -34,6 +34,7 @@ interface SideView {
   rides: number;
   avg: number;
   avgLabel: string;
+  co2SavedKg: number;
   lines: { label: string; value: string }[];
   totalLabel: string;
   note: string;
@@ -48,6 +49,7 @@ function passengerView(savings: Savings): SideView {
     rides: p.rides,
     avg: p.avgContribution,
     avgLabel: 'avg. cost contribution',
+    co2SavedKg: p.co2SavedKg,
     lines: [
       { label: `Driving alone · ${p.rides} ride${p.rides === 1 ? '' : 's'}`, value: formatCost(p.soloCost) },
       { label: 'Your cost contributions', value: `−${formatCost(p.contributions)}` },
@@ -66,6 +68,7 @@ function driverView(savings: Savings): SideView {
     rides: d.rides,
     avg: d.avgShared,
     avgLabel: 'avg. shared per ride',
+    co2SavedKg: d.co2SavedKg,
     lines: [
       { label: `Your trip costs · ${d.rides} ride${d.rides === 1 ? '' : 's'}`, value: formatCost(d.tripCost) },
       { label: 'Your share after contributions', value: formatCost(d.yourShare) },
@@ -175,6 +178,18 @@ function SavingsDetail({ view, isCurrentMonth }: { view: SideView; isCurrentMont
           label={`shared ride${view.rides === 1 ? '' : 's'} completed`}
         />
         <StatBox value={formatCost(view.avg)} label={view.avgLabel} />
+      </View>
+
+      <View style={styles.co2Row}>
+        <View style={[styles.co2Icon, { backgroundColor: theme.primarySoft }]}>
+          <SymbolView name={Icons.leaf} size={18} tintColor={theme.primary} />
+        </View>
+        <View>
+          <ThemedText type="smallBold">≈ {view.co2SavedKg.toFixed(1)} kg CO₂ saved</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            vs. driving alone {isCurrentMonth ? 'this month' : 'that month'}
+          </ThemedText>
+        </View>
       </View>
 
       <Pressable
@@ -366,6 +381,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 30,
     fontWeight: 700,
+  },
+  co2Row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  co2Icon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   howToggle: {
     flexDirection: 'row',
