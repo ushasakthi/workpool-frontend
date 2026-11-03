@@ -101,6 +101,15 @@ export default function ProfileScreen() {
         onPress={() => router.push('/profile/travel-profile')}
       />
 
+      {user.role !== UserRole.ADMIN && (
+        <NavLink
+          icon="savings"
+          title="Your savings"
+          subtitle="What sharing your commute saves each month"
+          onPress={() => router.push('/profile/savings')}
+        />
+      )}
+
       {(user.role === UserRole.DRIVER || user.role === UserRole.BOTH) && (
         <NavLink
           icon="car"
@@ -229,8 +238,7 @@ function EditProfile({ user, onDone }: { user: UserProfile; onDone: () => void }
         setPickedPhoto(null);
       }
       await updateProfile({ name: trimmedName, phone: phone.trim(), role });
-      // Adding driver capability needs a fresh token before the server lets you
-      // post rides / add a vehicle — hold the screen to tell the user.
+      // new drivers need a fresh token before they can post rides
       if (becomesProvider) {
         setRoleNotice(true);
       } else {
