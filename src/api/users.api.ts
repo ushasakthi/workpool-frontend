@@ -4,7 +4,7 @@ import { apiClient } from './client';
 import type { PreferredRole } from '@/constants/preferred-role.enum';
 import type { UserRole } from '@/constants/user-role.enum';
 import type { Weekday } from '@/constants/weekday.enum';
-import type { GeoPoint, UserProfile } from '@/types/user.types';
+import type { GeoPoint, PublicUserProfile, UserProfile } from '@/types/user.types';
 
 interface SuccessResponse<T> {
   success: true;
@@ -51,6 +51,13 @@ export interface UpdateTravelProfileInput {
   hideWorkplaceName?: boolean;
 }
 
+export async function getUserProfile(userId: string): Promise<PublicUserProfile> {
+  const response = await apiClient.get<SuccessResponse<PublicUserProfile>>(
+    `/users/${userId}/profile`,
+  );
+  return response.data.data;
+}
+
 export async function getMe(): Promise<UserProfile> {
   const response = await apiClient.get<SuccessResponse<UserProfile>>('/users/me');
   return response.data.data;
@@ -65,12 +72,11 @@ export async function uploadProfilePhoto(file: ProfilePhotoFile): Promise<UserPr
   const formData = new FormData();
 
   if (Platform.OS === 'web') {
-    // On web the picker gives a blob:/data: URI — turn it into a real Blob so the
-    // multipart body carries an actual file part.
+    // web: turn the blob:/data: URI into a real Blob
     const blob = await (await fetch(file.uri)).blob();
     formData.append('photo', blob, file.name);
   } else {
-    // React Native's FormData takes a { uri, name, type } descriptor instead of a Blob.
+    // native FormData takes { uri, name, type }
     formData.append(
       'photo',
       { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob,
@@ -98,8 +104,7 @@ export async function submitVerification(input: SubmitVerificationInput): Promis
   const formData = new FormData();
   formData.append('nicNumber', input.nicNumber);
   formData.append('linkedinUrl', input.linkedinUrl);
-  // React Native's FormData accepts a { uri, name, type } file descriptor here instead of
-  // a real Blob — not representable in the DOM FormData types, hence the cast.
+  // RN FormData accepts { uri, name, type } but the TS types don't, so cast
   formData.append(
     'nicDocument',
     { uri: input.file.uri, name: input.file.name, type: input.file.mimeType } as unknown as Blob,

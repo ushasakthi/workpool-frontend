@@ -17,8 +17,7 @@ export interface GeoPoint {
   label?: string;
 }
 
-// Mirrors the backend TravelProfile. For the owner's own view the coordinates are
-// exact and `approximate` is false; for other users they're fuzzed 300-500 m.
+// Other users' coordinates are fuzzed by 300-500 m (approximate = true)
 export interface TravelProfile {
   homeLocation?: GeoPoint;
   workLocation?: GeoPoint;
@@ -36,6 +35,25 @@ export interface User {
   email: string;
   phone: string;
   role: UserRole;
+}
+
+// public part of the Trust Score (backend user-profile.serializer.ts)
+export interface TrustSummary {
+  // 0-100, null until calculated
+  score: number | null;
+  completedRides: number;
+  ratingCount: number;
+  averageRating: number;
+}
+
+// another user's profile, from GET /users/:id/profile
+export interface PublicUserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  photoUrl?: string;
+  verification: VerificationInfo;
+  trustScore: TrustSummary;
 }
 
 export interface UserProfile extends User {
