@@ -13,6 +13,8 @@ interface TextFieldProps extends Omit<TextInputProps, 'style' | 'placeholderText
   error?: string;
   helperText?: string;
   isPassword?: boolean;
+  // fixed text before the input, e.g. a country code
+  prefix?: string;
 }
 
 export function TextField({
@@ -21,6 +23,7 @@ export function TextField({
   error,
   helperText,
   isPassword = false,
+  prefix,
   onFocus,
   onBlur,
   ...inputProps
@@ -44,6 +47,7 @@ export function TextField({
           isFocused && !error && { borderColor: theme.primary },
           error && { borderColor: theme.error },
         ]}>
+        {prefix && <ThemedText type="smallBold">{prefix}</ThemedText>}
         <TextInput
           {...inputProps}
           secureTextEntry={hideText}

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BookingStatusTag } from '@/components/bookings/booking-status-tag';
 import { PickedUpRow, PickupPin } from '@/components/bookings/pickup-status';
+import { SosButton } from '@/components/bookings/sos-button';
 import { RideRoute } from '@/components/rides/ride-route';
 import { ThemedText } from '@/components/themed-text';
 import { BookingStatus } from '@/constants/booking-status.enum';
@@ -15,12 +16,14 @@ import { formatDays } from '@/utils/schedule';
 interface BookingCardProps {
   booking: BookingListItem;
   onOpenProfile: () => void;
+  // shown on accepted bookings only
+  onSos?: () => void;
   // optional footer, e.g. the cancel button
   children?: ReactNode;
 }
 
 // passenger view of one booking
-export function BookingCard({ booking, onOpenProfile, children }: BookingCardProps) {
+export function BookingCard({ booking, onOpenProfile, onSos, children }: BookingCardProps) {
   const theme = useTheme();
   const driverName = booking.otherParty.name;
   const firstName = driverName.split(' ')[0];
@@ -40,7 +43,12 @@ export function BookingCard({ booking, onOpenProfile, children }: BookingCardPro
         <BookingStatusTag status={booking.status} />
       </View>
 
-      <RideRoute ride={booking.ride} />
+      <View style={styles.routeRow}>
+        <View style={styles.grow}>
+          <RideRoute ride={booking.ride} />
+        </View>
+        {onSos && booking.status === BookingStatus.ACCEPTED && <SosButton onPress={onSos} />}
+      </View>
 
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
@@ -88,6 +96,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  grow: {
+    flex: 1,
   },
   divider: {
     height: 1,

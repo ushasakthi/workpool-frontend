@@ -4,7 +4,12 @@ import { apiClient } from './client';
 import type { PreferredRole } from '@/constants/preferred-role.enum';
 import type { UserRole } from '@/constants/user-role.enum';
 import type { Weekday } from '@/constants/weekday.enum';
-import type { GeoPoint, PublicUserProfile, UserProfile } from '@/types/user.types';
+import type {
+  EmergencyContact,
+  GeoPoint,
+  PublicUserProfile,
+  UserProfile,
+} from '@/types/user.types';
 
 interface SuccessResponse<T> {
   success: true;
@@ -65,6 +70,14 @@ export async function getMe(): Promise<UserProfile> {
 
 export async function updateProfile(input: UpdateProfileInput): Promise<UserProfile> {
   const response = await apiClient.patch<SuccessResponse<UserProfile>>('/users/me/profile', input);
+  return response.data.data;
+}
+
+export async function updateEmergencyContact(input: EmergencyContact): Promise<UserProfile> {
+  const response = await apiClient.patch<SuccessResponse<UserProfile>>(
+    '/users/me/emergency-contact',
+    input,
+  );
   return response.data.data;
 }
 

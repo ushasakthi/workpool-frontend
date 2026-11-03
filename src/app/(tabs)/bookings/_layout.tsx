@@ -10,6 +10,7 @@ export default function BookingsLayout() {
       <Stack.Screen name="review" options={modal} />
       <Stack.Screen name="report" options={modal} />
       <Stack.Screen name="verify-pickup" options={modal} />
+      <Stack.Screen name="sos" options={modal} />
     </Stack>
   );
 }

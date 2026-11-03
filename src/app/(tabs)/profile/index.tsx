@@ -101,6 +101,13 @@ export default function ProfileScreen() {
         onPress={() => router.push('/profile/travel-profile')}
       />
 
+      <NavLink
+        icon="emergency"
+        title="Emergency contact"
+        subtitle={user.emergencyContact?.name ?? 'Not set'}
+        onPress={() => router.push('/profile/emergency-contact')}
+      />
+
       {user.role !== UserRole.ADMIN && (
         <NavLink
           icon="savings"

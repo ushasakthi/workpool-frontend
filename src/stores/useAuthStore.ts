@@ -10,6 +10,7 @@ import {
 } from '@/api/client';
 import {
   getMe,
+  updateEmergencyContact as updateEmergencyContactRequest,
   updateProfile as updateProfileRequest,
   updateTravelProfile as updateTravelProfileRequest,
   uploadProfilePhoto as uploadProfilePhotoRequest,
@@ -17,7 +18,7 @@ import {
   type UpdateProfileInput,
   type UpdateTravelProfileInput,
 } from '@/api/users.api';
-import type { AuthResult, UserProfile } from '@/types/user.types';
+import type { AuthResult, EmergencyContact, UserProfile } from '@/types/user.types';
 
 type AuthStatus = 'idle' | 'hydrating' | 'authenticated' | 'unauthenticated';
 
@@ -32,6 +33,7 @@ interface AuthState {
   clearSession: () => Promise<void>;
   refreshMe: () => Promise<void>;
   updateProfile: (input: UpdateProfileInput) => Promise<void>;
+  updateEmergencyContact: (input: EmergencyContact) => Promise<void>;
   updateTravelProfile: (input: UpdateTravelProfileInput) => Promise<void>;
   uploadProfilePhoto: (file: ProfilePhotoFile) => Promise<void>;
 }
@@ -100,6 +102,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   updateProfile: async (input) => {
     const user = await updateProfileRequest(input);
+    set({ user });
+  },
+
+  updateEmergencyContact: async (input) => {
+    const user = await updateEmergencyContactRequest(input);
     set({ user });
   },
 

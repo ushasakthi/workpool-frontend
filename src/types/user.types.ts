@@ -56,11 +56,19 @@ export interface PublicUserProfile {
   trustScore: TrustSummary;
 }
 
+export interface EmergencyContact {
+  name: string;
+  // international format, e.g. +94771234567
+  phone: string;
+}
+
 export interface UserProfile extends User {
   linkedinUrl?: string;
   photoUrl?: string;
   travelProfile?: TravelProfile;
   verification: VerificationInfo;
+  // own profile only; who SOS alerts
+  emergencyContact?: EmergencyContact;
 }
 
 export interface VerificationSubmission {
