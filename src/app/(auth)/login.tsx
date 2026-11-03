@@ -33,7 +33,7 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       const result = await login({ email: email.trim(), password });
-      // Navigation is handled by the root auth gate once the store updates.
+      // the auth gate handles the redirect
       await setSession(result);
     } catch (err) {
       setError(getErrorMessage(err));

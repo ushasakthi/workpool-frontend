@@ -12,7 +12,7 @@ interface RoleChoiceProps {
   onChange: (role: UserRole) => void;
 }
 
-// The three self-assignable account roles (backend blocks `admin`).
+// admin can't be picked at signup
 const OPTIONS: { value: UserRole; label: string; icon: keyof typeof Icons }[] = [
   { value: UserRole.PASSENGER, label: 'Find rides', icon: 'personCircle' },
   { value: UserRole.DRIVER, label: 'Offer rides', icon: 'car' },

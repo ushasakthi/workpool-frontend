@@ -9,9 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { GeoPoint } from '@/types/user.types';
 
-// Web build of the OSM pin picker — react-native-webview has no web implementation,
-// so this renders the same Leaflet document in an <iframe> and listens for the pin
-// coordinates via window.postMessage. Native uses osm-map-picker.tsx.
+// Web version: webview doesn't work on web, so the map runs in an iframe
 const DEFAULT_CENTER = { lat: 6.9271, lng: 79.8612 };
 
 interface OsmMapPickerProps {

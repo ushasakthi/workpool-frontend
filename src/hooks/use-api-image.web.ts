@@ -3,9 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { apiClient } from '@/api/client';
 
-// Web: a browser <img> can't send an Authorization header, so fetch the auth-gated
-// file as a blob (the axios interceptor attaches the token) and hand the component
-// an object URL instead.
+// web: <img> can't send auth headers, so fetch the image as a blob
 export function useApiImageSource(path: string | undefined | null): ImageSource | undefined {
   const [resolved, setResolved] = useState<{ path: string; url: string } | undefined>(undefined);
 

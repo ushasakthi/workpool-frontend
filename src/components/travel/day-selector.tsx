@@ -8,7 +8,6 @@ import { useTheme } from '@/hooks/use-theme';
 interface DaySelectorProps {
   value: Weekday[];
   onChange: (days: Weekday[]) => void;
-  /** '1-letter' labels (default, travel profile) or '2-letter' (ride posting). */
   size?: 'short' | 'medium';
 }
 

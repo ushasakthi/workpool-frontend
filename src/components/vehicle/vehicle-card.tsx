@@ -14,7 +14,7 @@ interface VehicleCardProps {
   vehicle: Vehicle;
   onEdit: () => void;
   onToggleActive: () => void;
-  /** A status toggle for this card is in flight. */
+  // true while the active toggle is saving
   busy?: boolean;
 }
 

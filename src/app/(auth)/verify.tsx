@@ -64,8 +64,7 @@ export default function VerifyScreen() {
   const linkedinValid = LINKEDIN_URL_REGEX.test(normalizedLinkedinUrl);
   const canSubmit = nicValid && linkedinValid && file !== null && !isSubmitting;
 
-  // Inline errors — shown once the field has content, or after a submit attempt,
-  // so an untouched form isn't red on first load.
+  // don't show errors until the user types or submits
   const nicError =
     (submitAttempted || nicNumber.trim().length > 0) && !nicValid
       ? 'Enter a valid Sri Lankan NIC: 12 digits (e.g. 200012345678) or 9 digits + V (e.g. 912345678V).'
@@ -158,8 +157,7 @@ export default function VerifyScreen() {
         file,
         onUploadProgress: setUploadProgress,
       });
-      // Registration auto-logs the user in just long enough to submit verification —
-      // end that session here so checking status requires an explicit login.
+      // log out so the user has to log in again to check status
       await clearSession();
       router.replace('/login?justSubmitted=1');
     } catch (err) {

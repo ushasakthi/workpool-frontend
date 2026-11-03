@@ -15,8 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { getErrorMessage } from '@/utils/errors';
 
-// Below this width the marketing pane is dropped in favor of a plain centered form —
-// this screen is a desktop/web surface (see AdminMaxContentWidth), not a phone layout.
+// below this width, hide the side panel and only show the form
 const MARKETING_PANE_BREAKPOINT = 860;
 
 export default function AdminLoginScreen() {
@@ -38,7 +37,7 @@ export default function AdminLoginScreen() {
     setIsSubmitting(true);
     try {
       const result = await login({ email: email.trim(), password });
-      // Navigation is handled by the root auth gate once the store updates.
+      // the auth gate handles the redirect
       await setSession(result);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -202,8 +201,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: Spacing.six,
     justifyContent: 'space-between',
-    // Flat brand green rather than a gradient — this RN Web version doesn't render
-    // experimental_backgroundImage, and a fixed marketing panel doesn't need to be theme-aware.
+    // gradients don't render on web here, so plain green
     backgroundColor: '#1C3327',
   },
   trustPill: {

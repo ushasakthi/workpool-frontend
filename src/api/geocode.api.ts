@@ -1,7 +1,5 @@
-// Reverse geocoding via OpenStreetMap's Nominatim — a public service, NOT our backend,
-// so it uses a plain fetch rather than the authenticated apiClient. Best-effort: callers
-// must handle a null result (offline, rate-limited, or no match) and fall back to
-// showing raw coordinates.
+// OpenStreetMap Nominatim (not our backend), so plain fetch.
+// Returns null if it fails.
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
 const REQUEST_TIMEOUT_MS = 6000;
 
@@ -21,7 +19,7 @@ interface NominatimReverseResponse {
   address?: NominatimAddress;
 }
 
-// "Near Mission District, San Francisco" — an approximate area label, never a street address.
+// e.g. "Near Mission District, San Francisco"
 export async function reverseGeocodeApproxLabel(
   lat: number,
   lng: number,

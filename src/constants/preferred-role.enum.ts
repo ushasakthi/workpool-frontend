@@ -1,5 +1,5 @@
-// Mirrors the backend PreferredRole enum value-for-value. Not the same as UserRole:
-// this is only which mode the app opens in by default for a "both" user.
+// Must match backend PreferredRole. Not the same as UserRole, it's just
+// which mode a "both" user starts in.
 export enum PreferredRole {
   DRIVER = 'driver',
   PASSENGER = 'passenger',

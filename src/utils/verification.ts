@@ -7,8 +7,7 @@ interface VerificationStatusDisplay {
   icon: keyof typeof Icons;
 }
 
-// Non-color-only: every status carries a distinct icon and its own text label, so it
-// reads without relying on the pill colour (accessibility + report transparency principle).
+// each status has its own icon and label, not just a colour (accessibility)
 const STATUS_DISPLAY: Record<VerificationStatus, VerificationStatusDisplay> = {
   [VerificationStatus.VERIFIED]: { label: 'Verified', tone: 'primary', icon: 'checkCircle' },
   [VerificationStatus.PENDING]: { label: 'Pending review', tone: 'neutral', icon: 'clock' },

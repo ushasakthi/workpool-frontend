@@ -8,13 +8,11 @@ interface SkeletonProps {
   width?: DimensionValue;
   height?: number;
   radius?: number;
-  /** Render as a circle of `height` diameter (ignores width/radius). */
+  // circle with diameter = height
   circle?: boolean;
   style?: object;
 }
 
-// A single shimmer placeholder block. Compose several to mirror the shape of the
-// content that's loading (see the profile / travel-profile loading states).
 export function Skeleton({ width = '100%', height = 16, radius = Spacing.two, circle = false, style }: SkeletonProps) {
   const theme = useTheme();
   const [pulse] = useState(() => new Animated.Value(0));

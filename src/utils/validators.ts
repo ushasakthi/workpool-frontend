@@ -1,7 +1,5 @@
-// Sri Lankan vehicle plate — mirrors PLATE_NUMBER_REGEX in the backend
-// (workpool-backend src/common/utils/validation-patterns.ts): current letter
-// series ("CAB-1234", optional province code "WP CAB-1234") or the older numeric
-// series ("251-1234"). Case-insensitive; the backend stores it upper-cased.
+// Sri Lankan plate, same as backend PLATE_NUMBER_REGEX
+// e.g. "CAB-1234", "WP CAB-1234", "251-1234"
 export const PLATE_NUMBER_REGEX = /^(?:[A-Z]{2,3}\s)?(?:[A-Z]{2,3}|\d{2,3})-\d{4}$/i;
 
 export function isValidPlate(value: string): boolean {
@@ -20,8 +18,7 @@ export function isValidVehicleYear(value: number): boolean {
   );
 }
 
-// Vehicle photo upload — same limits as the profile photo and the backend
-// image-upload config (jpg/png/webp, 5 MB).
+// same limits as the backend image upload (jpg/png/webp, 5 MB)
 export const MAX_VEHICLE_PHOTO_BYTES = 5 * 1024 * 1024;
 export const ALLOWED_VEHICLE_PHOTO_MIME = [
   'image/jpeg',

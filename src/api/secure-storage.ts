@@ -1,7 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-// Native (iOS/Android) implementation — backed by the real platform Keychain/Keystore via
-// expo-secure-store. See secure-storage.web.ts for the web counterpart.
+// native: Keychain / Keystore
 export async function readSecureItem(key: string): Promise<string | null> {
   return SecureStore.getItemAsync(key);
 }

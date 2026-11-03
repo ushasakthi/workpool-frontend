@@ -14,20 +14,12 @@ const PUBLIC_SCREENS = new Set([
   'forgot-password',
   'reset-password',
 ]);
-// Web is primarily an admin/staff surface (see AdminMaxContentWidth in constants/theme.ts) —
-// unauthenticated visitors land on the admin console there instead of the consumer login.
+// on web, logged-out users go to the admin login
 const DEFAULT_LOGGED_OUT_SCREEN = Platform.OS === 'web' ? '/admin-login' : '/login';
 // Auth screens reachable while logged in but not yet fully verified.
 const ONBOARDING_SCREENS = new Set(['verify', 'pending-verification']);
 
-/**
- * Keeps the current route in sync with auth/verification state: unauthenticated users are
- * confined to the public auth screens, admins are confined to the (admin) section, regular
- * authenticated-but-unverified users to the onboarding screens, and only fully verified
- * users can reach the (tabs) app. Runs on every relevant state/segment change rather than
- * forcing one canonical screen, so e.g. "Edit submission" can freely move between
- * verify <-> pending-verification.
- */
+// Redirects users based on login, role and verification status
 export function useProtectedRoute() {
   const router = useRouter();
   const segments = useSegments();
@@ -55,7 +47,7 @@ export function useProtectedRoute() {
     }
 
     if (user.role === UserRole.ADMIN) {
-      // (admin) is a route group, not a URL segment — the actual default path is /home.
+      // (admin) is a group, so the real path is /home
       if (!inAdminGroup) {
         router.replace('/home');
       }

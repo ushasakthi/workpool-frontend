@@ -40,7 +40,7 @@ export default function PendingVerificationScreen() {
   async function handleCheckStatus() {
     setIsChecking(true);
     try {
-      // If the status changed, the root auth gate navigates onward automatically.
+      // the auth gate redirects if the status changed
       await refreshMe();
     } finally {
       setIsChecking(false);

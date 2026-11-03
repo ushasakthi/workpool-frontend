@@ -10,11 +10,8 @@ import { Icons } from '@/constants/icons';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// expo-router/unstable-native-tabs crashes on iOS 26 (async icon load racing a
-// tab-bar rebuild — see software-mansion/react-native-screens#4176), so tabs are
-// rendered with the stable JS-based Tabs API instead, same as the web fallback.
-// Icons are SF Symbols/Material Symbols via the app-wide Icons map (see constants/icons.ts),
-// same system used everywhere else in the app, rather than one-off raster art per tab.
+// Using JS Tabs because native tabs crash on iOS 26
+// (software-mansion/react-native-screens#4176)
 export default function AppTabs() {
   return (
     <Tabs style={styles.tabs}>

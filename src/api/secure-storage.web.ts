@@ -1,8 +1,5 @@
-// expo-secure-store has no real web implementation, so persist to localStorage instead —
-// otherwise a session only lives in memory and a page reload drops it entirely. This isn't
-// as safe as a native Keychain (readable by any script on the page, so vulnerable to XSS),
-// but there's no httpOnly-cookie auth flow here, and this is the standard tradeoff for a
-// token-based web SPA.
+// web: expo-secure-store doesn't work here, so use localStorage.
+// Less safe than Keychain (XSS can read it).
 const STORAGE_PREFIX = 'workpool:';
 
 export async function readSecureItem(key: string): Promise<string | null> {

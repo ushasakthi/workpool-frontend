@@ -61,12 +61,11 @@ export async function uploadVehiclePhoto(
   const formData = new FormData();
 
   if (Platform.OS === 'web') {
-    // On web the picker gives a blob:/data: URI — turn it into a real Blob so the
-    // multipart body carries an actual file part.
+    // web: turn the blob:/data: URI into a real Blob
     const blob = await (await fetch(file.uri)).blob();
     formData.append('photo', blob, file.name);
   } else {
-    // React Native's FormData takes a { uri, name, type } descriptor instead of a Blob.
+    // native FormData takes { uri, name, type }
     formData.append('photo', {
       uri: file.uri,
       name: file.name,

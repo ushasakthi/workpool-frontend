@@ -16,7 +16,7 @@ interface MapLocationFieldProps {
   kind: 'home' | 'work' | 'origin' | 'destination';
   point?: GeoPoint;
   onChange: (point: GeoPoint) => void;
-  /** Caption shown before a point is chosen (defaults to "Set <kind> location"). */
+  // shown before a point is picked
   placeholder?: string;
 }
 
@@ -25,8 +25,7 @@ const GREEN_KINDS = new Set(['home', 'origin']);
 
 const PREVIEW_ZOOM = 14;
 
-// OSM tile containing this coordinate — a rough area thumbnail, not a precise pin
-// (which suits the "approximate location only" model).
+// map tile around the point, just a rough preview
 function tileUrl(lat: number, lng: number): string {
   const n = 2 ** PREVIEW_ZOOM;
   const x = Math.floor(((lng + 180) / 360) * n);

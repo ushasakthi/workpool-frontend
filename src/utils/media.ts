@@ -5,9 +5,7 @@ export interface RemoteImageSource {
   headers?: Record<string, string>;
 }
 
-// Turns a relative API file path (e.g. the profile's `photoUrl`,
-// `/users/:id/photo?v=…`) into an <Image> source with the bearer token attached,
-// since those routes are auth-gated. Returns undefined when there's no path.
+// Image source with the auth token (photo routes need login)
 export function resolveApiImageSource(
   path: string | undefined | null,
   token: string | null,

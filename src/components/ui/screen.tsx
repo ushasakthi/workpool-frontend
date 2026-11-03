@@ -8,16 +8,15 @@ import { BottomTabInset, Spacing } from '@/constants/theme';
 const HEADER_PADDING_TOP = Spacing.two;
 const CONTENT_PADDING_TOP = Spacing.five;
 const CONTENT_PADDING_BOTTOM = Spacing.five;
-// The app tab bar sits at the bottom on native but is a bar across the top on web
-// (see app-tabs.web.tsx) — a screen inside (tabs) has to clear whichever applies.
+// tab bar is at the bottom on native, at the top on web
 const TAB_BAR_BOTTOM_INSET = BottomTabInset + Spacing.three;
 const TAB_BAR_WEB_TOP_INSET = 68;
 
 interface ScreenProps {
   children: ReactNode;
-  /** Persistent app-chrome bar rendered above the scrollable content, not part of it. */
+  // fixed bar above the scroll content
   header?: ReactNode;
-  /** Set on screens rendered inside the (tabs) navigator so content clears the tab bar. */
+  // adds space for the tab bar
   underTabBar?: boolean;
 }
 

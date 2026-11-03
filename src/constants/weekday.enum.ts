@@ -1,4 +1,4 @@
-// Mirrors the backend Weekday enum value-for-value (TravelProfile.daysAvailable).
+// Must match the backend Weekday enum
 export enum Weekday {
   MON = 'Mon',
   TUE = 'Tue',
@@ -9,8 +9,7 @@ export enum Weekday {
   SUN = 'Sun',
 }
 
-// Mon-first commute order. `short` (1 letter) is used by the travel-profile day
-// selector; `medium` (2 letters) by the ride-posting day selector.
+// short = 1 letter, medium = 2 letters
 export const WEEKDAYS_IN_ORDER: { value: Weekday; short: string; medium: string }[] = [
   { value: Weekday.MON, short: 'M', medium: 'Mo' },
   { value: Weekday.TUE, short: 'T', medium: 'Tu' },

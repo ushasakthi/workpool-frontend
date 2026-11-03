@@ -64,10 +64,8 @@ export default function TravelProfileScreen() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Seed the form from the loaded profile once, per account. On a cold start `user` is
-  // null at mount, so the initial useState value is empty — this render-phase adjustment
-  // (React's "storing info from previous renders" pattern) fills it in when the profile
-  // arrives, and re-seeds only if the account changes, never on a background refresh.
+  // Fill the form when the profile loads (user is null on the first render).
+  // Only re-fill if the account changes.
   const [seededUserId, setSeededUserId] = useState(user?.id);
   if (user && user.id !== seededUserId) {
     setSeededUserId(user.id);

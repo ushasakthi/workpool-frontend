@@ -13,7 +13,7 @@ import { formatRideSchedule } from '@/utils/schedule';
 
 interface RideCardProps {
   ride: Ride;
-  /** Footer content — rendered below a divider. Omit for a bare info card. */
+  // optional footer, e.g. edit buttons
   children?: ReactNode;
 }
 
@@ -28,8 +28,6 @@ function seatsText(seats: number): string {
   return `${seats} seat${seats === 1 ? '' : 's'} open`;
 }
 
-// Route + schedule + seats + status. Reused by "My rides" (with owner-action
-// footer) and Sprint 4's search results.
 export function RideCard({ ride, children }: RideCardProps) {
   const theme = useTheme();
 

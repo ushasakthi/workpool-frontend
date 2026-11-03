@@ -10,7 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { GeoPoint } from '@/types/user.types';
 
-// WorkPool serves Sri Lankan commuters — centre on Colombo when there's no existing pin.
+// default to Colombo
 const DEFAULT_CENTER = { lat: 6.9271, lng: 79.8612 };
 
 interface OsmMapPickerProps {

@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const user = await getMe();
       set({ status: 'authenticated', token, refreshToken, user, isAuthenticated: true });
     } catch {
-      // Stored token is stale/invalid (expired, revoked, etc.) — drop it and start fresh.
+      // token expired or invalid, clear it
       await Promise.all([
         deleteSecureItem(AUTH_TOKEN_STORAGE_KEY),
         deleteSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
@@ -114,9 +114,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
-// If a request's refresh-on-401 attempt fails outright (refresh token itself expired or
-// revoked), drop the session so the auth gate redirects to login instead of leaving the
-// app stuck showing stale "Unauthorized" errors from every subsequent request.
+// if the token refresh fails, log out so the user goes back to login
 setSessionExpiredHandler(() => {
   void useAuthStore.getState().clearSession();
 });

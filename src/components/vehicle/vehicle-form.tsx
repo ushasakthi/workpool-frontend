@@ -23,7 +23,7 @@ import { SeatsField } from './seats-field';
 import { VehiclePhotoField } from './vehicle-photo-field';
 
 interface VehicleFormProps {
-  /** Present when editing an existing vehicle; absent when adding one. */
+  // only set when editing
   vehicle?: Vehicle;
   onDone: () => void;
 }

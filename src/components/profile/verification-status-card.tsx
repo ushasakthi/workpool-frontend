@@ -14,8 +14,6 @@ interface VerificationStatusCardProps {
   verification: VerificationInfo;
 }
 
-// Read-only summary of identity + workplace review state. The same row shape is
-// reserved for the future Trust Score.
 export function VerificationStatusCard({ verification }: VerificationStatusCardProps) {
   const theme = useTheme();
 

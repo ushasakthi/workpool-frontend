@@ -9,7 +9,6 @@ import { useTheme } from '@/hooks/use-theme';
 
 interface VehiclePhotoFieldProps {
   label: string;
-  /** A freshly-picked local URI or an auth-gated remote source. */
   source?: ImageSource;
   onPick: () => void;
   error?: string;

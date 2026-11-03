@@ -10,7 +10,6 @@ import { useTheme } from '@/hooks/use-theme';
 const SIZE = 96;
 
 interface ProfilePhotoProps {
-  /** A local file URI (freshly picked) or a remote source with auth headers. */
   photo?: ImageSource;
   editable?: boolean;
   onChangePress?: () => void;

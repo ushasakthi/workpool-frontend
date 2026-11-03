@@ -1,5 +1,4 @@
-// Mirrors the backend VehicleView (workpool-backend
-// src/modules/vehicles/serializers/vehicle.serializer.ts) field-for-field.
+// Same shape as backend vehicle.serializer.ts
 export interface Vehicle {
   id: string;
   ownerId: string;
@@ -8,9 +7,8 @@ export interface Vehicle {
   year: number;
   plateNumber: string;
   seatsAvailable: number;
-  // Soft on/off switch — an inactive vehicle stays on file but can't be used to
-  // post new rides.
+  // inactive vehicles can't be used for new rides
   isActive: boolean;
-  // Auth-gated fetch route (`/vehicles/:id/photo?v=…`), not a raw filename.
+  // auth-protected URL, not a filename
   photoUrl?: string;
 }
