@@ -2,28 +2,51 @@ import Constants from 'expo-constants';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import { deleteSecureItem, readSecureItem, writeSecureItem } from './secure-storage';
+import { useConnectionStore } from '@/stores/useConnectionStore';
 
 export const AUTH_TOKEN_STORAGE_KEY = 'workpool_auth_token';
 export const AUTH_REFRESH_TOKEN_STORAGE_KEY = 'workpool_auth_refresh_token';
 
-// Endpoints where a 401 is always a business-logic error (bad credentials, expired reset
-// token, ...), never a "your session expired" signal — never worth a refresh-and-retry.
+// a 401 here means wrong input, not an expired session, so don't refresh
 const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/forgot-password', '/auth/reset-password'];
 
 export const apiUrl = Constants.expoConfig?.extra?.apiUrl as string;
 
+// give up on a request after this long instead of hanging the screen
+const REQUEST_TIMEOUT_MS = 15_000;
+// one quiet retry for reads after a network blip or a 5xx
+const RETRY_DELAY_MS = 1_000;
+
 export const apiClient = axios.create({
   baseURL: apiUrl,
+  timeout: REQUEST_TIMEOUT_MS,
 });
 
-// Re-exported so callers (useAuthStore, etc.) don't need to know storage lives in its own
-// module — secure-storage.ts is native (Keychain/Keystore), secure-storage.web.ts is web
-// (localStorage), picked automatically by the bundler's platform extension resolution.
+type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean; _networkRetry?: boolean };
+
+// no reply at all (offline, server down, timeout) vs. a reply with an error status
+function isConnectionProblem(error: AxiosError): boolean {
+  return !error.response;
+}
+
+// Only GETs are retried: re-sending a POST/PATCH (e.g. "accept booking")
+// could do the action twice.
+async function retryReadOnce(error: AxiosError): Promise<unknown> {
+  const request = error.config as RetryableRequest | undefined;
+  const status = error.response?.status ?? 0;
+  const retryable = isConnectionProblem(error) || status >= 500;
+  if (!request || request.method !== 'get' || request._networkRetry || !retryable) {
+    throw error;
+  }
+  request._networkRetry = true;
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+  return apiClient(request);
+}
+
+// secure-storage.ts or .web.ts is picked by platform
 export { readSecureItem, writeSecureItem, deleteSecureItem };
 
-// Set by useAuthStore so this module can reset auth state on an unrecoverable 401,
-// without api/client.ts importing the store back (that would be circular — client.ts
-// is imported by users.api.ts is imported by the store).
+// set by useAuthStore (importing the store here would be circular)
 let handleSessionExpired: (() => void) | null = null;
 export function setSessionExpiredHandler(handler: () => void): void {
   handleSessionExpired = handler;
@@ -37,8 +60,7 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Single in-flight refresh shared by every request that hits a 401 at the same time,
-// so concurrent requests don't each rotate (and invalidate each other's) refresh token.
+// share one refresh between requests that get a 401 at the same time
 let refreshPromise: Promise<string | null> | null = null;
 
 async function performRefresh(): Promise<string | null> {
@@ -62,13 +84,20 @@ async function performRefresh(): Promise<string | null> {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    useConnectionStore.getState().setOffline(false);
+    return response;
+  },
   async (error: AxiosError) => {
-    const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    if (isConnectionProblem(error)) {
+      useConnectionStore.getState().setOffline(true);
+    }
+
+    const originalRequest = error.config as RetryableRequest | undefined;
     const isPublicAuthPath = PUBLIC_AUTH_PATHS.some((path) => originalRequest?.url?.includes(path));
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retry || isPublicAuthPath) {
-      throw error;
+      return retryReadOnce(error);
     }
     originalRequest._retry = true;
 

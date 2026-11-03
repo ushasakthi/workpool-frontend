@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useProtectedRoute } from '@/hooks/use-protected-route';
 
 SplashScreen.preventAutoHideAsync();
@@ -19,6 +20,8 @@ export default function RootLayout() {
         <Stack.Screen name="(admin)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
+      {/* on top of every screen, shown only while the API can't be reached */}
+      <OfflineBanner />
     </ThemeProvider>
   );
 }
