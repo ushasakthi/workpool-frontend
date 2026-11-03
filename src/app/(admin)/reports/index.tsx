@@ -1,12 +1,14 @@
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { StatusIcon } from '@/components/ui/status-icon';
 import { Icons } from '@/constants/icons';
+import { ReportSeverity } from '@/constants/report-severity.enum';
 import { ReportStatus } from '@/constants/report-status.enum';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,6 +26,12 @@ const OVERDUE_DAYS = 4;
 
 type Resolution = ReportStatus.REVIEWED | ReportStatus.DISMISSED;
 
+const SEVERITY_OPTIONS: { value: ReportSeverity; label: string; hint: string }[] = [
+  { value: ReportSeverity.LOW, label: 'Low', hint: 'Minor, e.g. late pickup' },
+  { value: ReportSeverity.MEDIUM, label: 'Medium', hint: 'Repeated or disrespectful' },
+  { value: ReportSeverity.HIGH, label: 'High', hint: 'Safety risk' },
+];
+
 export default function AdminReportsScreen() {
   const theme = useTheme();
   const reports = useAdminStore((state) => state.openReports);
@@ -38,11 +46,11 @@ export default function AdminReportsScreen() {
     void load().catch((err) => setLoadError(getErrorMessage(err)));
   }, [load]);
 
-  async function act(id: string, status: Resolution) {
+  async function act(id: string, status: Resolution, severity?: ReportSeverity) {
     setActionError(null);
     setBusy({ id, status });
     try {
-      await resolve(id, status);
+      await resolve(id, status, severity);
     } catch (err) {
       setActionError(getErrorMessage(err));
     } finally {
@@ -111,7 +119,7 @@ export default function AdminReportsScreen() {
               report={report}
               busy={busy?.id === report.id ? busy.status : null}
               locked={busy !== null}
-              onResolve={(status) => void act(report.id, status)}
+              onResolve={(status, severity) => void act(report.id, status, severity)}
             />
           ))}
         </View>
@@ -165,73 +173,160 @@ function ReportRow({
   busy: Resolution | null;
   // any row waiting on the server locks every row's buttons
   locked: boolean;
-  onResolve: (status: Resolution) => void;
+  onResolve: (status: Resolution, severity?: ReportSeverity) => void;
 }) {
   const theme = useTheme();
+  // Uphold opens the severity picker under the row, Confirm sends it
+  const [picking, setPicking] = useState(false);
   const isSafety = SAFETY_CATEGORIES.includes(report.category);
   const overdue = daysSince(report.createdAt) > OVERDUE_DAYS;
   const { reportedUser, reportedBy } = report;
 
   return (
-    <View style={[styles.dataRow, { borderBottomColor: theme.border }]}>
-      <ThemedText type="smallBold" themeColor="textSecondary" style={{ flex: COLUMN_FLEX.code }}>
-        {reportCode(report.id)}
-      </ThemedText>
+    <View style={[styles.rowBorder, { borderBottomColor: theme.border }]}>
+      <View style={styles.dataRow}>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={{ flex: COLUMN_FLEX.code }}>
+          {reportCode(report.id)}
+        </ThemedText>
 
-      <View style={{ flex: COLUMN_FLEX.reason }}>
-        <View style={styles.inline}>
-          <ThemedText type="smallBold">{REPORT_CATEGORY_LABEL[report.category]}</ThemedText>
-          {isSafety && (
-            <View style={[styles.safetyTag, { backgroundColor: theme.errorSoft }]}>
-              <ThemedText type="small" themeColor="error">
-                Safety
-              </ThemedText>
-            </View>
-          )}
+        <View style={{ flex: COLUMN_FLEX.reason }}>
+          <View style={styles.inline}>
+            <ThemedText type="smallBold">{REPORT_CATEGORY_LABEL[report.category]}</ThemedText>
+            {isSafety && (
+              <View style={[styles.safetyTag, { backgroundColor: theme.errorSoft }]}>
+                <ThemedText type="small" themeColor="error">
+                  Safety
+                </ThemedText>
+              </View>
+            )}
+          </View>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {report.reason ? `“${report.reason}”` : 'No details given'}
+          </ThemedText>
         </View>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-          {report.reason ? `“${report.reason}”` : 'No details given'}
+
+        <View style={{ flex: COLUMN_FLEX.reported }}>
+          <ThemedText type="smallBold">{reportedUser.name}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {reportedUser.role === 'driver' ? 'Driver' : 'Passenger'} · {reportedUser.otherReports} other
+            report{reportedUser.otherReports === 1 ? '' : 's'}
+          </ThemedText>
+        </View>
+
+        <View style={{ flex: COLUMN_FLEX.reporter }}>
+          <ThemedText type="smallBold">{reportedBy.name}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {reportedBy.email}
+          </ThemedText>
+        </View>
+
+        <ThemedText
+          type={overdue ? 'smallBold' : 'small'}
+          themeColor={overdue ? 'error' : 'textSecondary'}
+          numberOfLines={1}
+          style={{ flex: COLUMN_FLEX.filed }}>
+          {formatTimeAgo(report.createdAt)}
         </ThemedText>
+
+        <View style={[styles.actions, styles.resolve]}>
+          <Button label="Uphold" variant="soft" disabled={locked} onPress={() => setPicking(true)} />
+          <Button
+            label="Dismiss"
+            variant="text"
+            loading={busy === ReportStatus.DISMISSED}
+            disabled={locked}
+            onPress={() => onResolve(ReportStatus.DISMISSED)}
+          />
+        </View>
       </View>
 
-      <View style={{ flex: COLUMN_FLEX.reported }}>
-        <ThemedText type="smallBold">{reportedUser.name}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-          {reportedUser.role === 'driver' ? 'Driver' : 'Passenger'} · {reportedUser.otherReports} other
-          report{reportedUser.otherReports === 1 ? '' : 's'}
-        </ThemedText>
-      </View>
+      {picking && (
+        <SeverityPicker
+          reportedUserName={reportedUser.name}
+          busy={busy === ReportStatus.REVIEWED}
+          locked={locked}
+          onConfirm={(severity) => onResolve(ReportStatus.REVIEWED, severity)}
+          onCancel={() => setPicking(false)}
+        />
+      )}
+    </View>
+  );
+}
 
-      <View style={{ flex: COLUMN_FLEX.reporter }}>
-        <ThemedText type="smallBold">{reportedBy.name}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-          {reportedBy.email}
-        </ThemedText>
-      </View>
+function SeverityPicker({
+  reportedUserName,
+  busy,
+  locked,
+  onConfirm,
+  onCancel,
+}: {
+  reportedUserName: string;
+  busy: boolean;
+  locked: boolean;
+  onConfirm: (severity: ReportSeverity) => void;
+  onCancel: () => void;
+}) {
+  const theme = useTheme();
+  const router = useRouter();
+  const [severity, setSeverity] = useState<ReportSeverity | null>(null);
 
-      <ThemedText
-        type={overdue ? 'smallBold' : 'small'}
-        themeColor={overdue ? 'error' : 'textSecondary'}
-        numberOfLines={1}
-        style={{ flex: COLUMN_FLEX.filed }}>
-        {formatTimeAgo(report.createdAt)}
+  return (
+    <View style={styles.picker}>
+      <ThemedText type="small" themeColor="textSecondary">
+        Severity
       </ThemedText>
 
-      <View style={[styles.actions, styles.resolve]}>
+      <View style={styles.inline}>
+        {SEVERITY_OPTIONS.map((option) => {
+          const selected = option.value === severity;
+          const high = option.value === ReportSeverity.HIGH;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="button"
+              disabled={locked}
+              onPress={() => setSeverity(option.value)}
+              style={[
+                styles.chip,
+                { borderColor: theme.border },
+                selected && high && { backgroundColor: theme.errorSoft, borderColor: theme.errorSoft },
+                selected && !high && { backgroundColor: theme.primarySoft, borderColor: theme.primary },
+              ]}>
+              <ThemedText type="smallBold" themeColor={selected && high ? 'error' : 'text'}>
+                {option.label}
+              </ThemedText>
+              <ThemedText type="small" themeColor={selected && high ? 'error' : 'textSecondary'}>
+                {option.hint}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {severity === ReportSeverity.HIGH && (
+        <View style={styles.inline}>
+          <SymbolView name={Icons.warningTriangle} size={16} tintColor={theme.error} />
+          <ThemedText type="small" themeColor="error">
+            Consider suspending this user
+          </ThemedText>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push({ pathname: '/users', params: { search: reportedUserName } })}>
+            <ThemedText type="smallBold" themeColor="primary" style={styles.underline}>
+              Review suspension
+            </ThemedText>
+          </Pressable>
+        </View>
+      )}
+
+      <View style={styles.inline}>
         <Button
-          label="Mark reviewed"
-          variant="soft"
-          loading={busy === ReportStatus.REVIEWED}
-          disabled={locked}
-          onPress={() => onResolve(ReportStatus.REVIEWED)}
+          label="Confirm"
+          loading={busy}
+          disabled={locked || severity === null}
+          onPress={() => severity && onConfirm(severity)}
         />
-        <Button
-          label="Dismiss"
-          variant="text"
-          loading={busy === ReportStatus.DISMISSED}
-          disabled={locked}
-          onPress={() => onResolve(ReportStatus.DISMISSED)}
-        />
+        <Button label="Cancel" variant="text" disabled={locked} onPress={onCancel} />
       </View>
     </View>
   );
@@ -246,7 +341,7 @@ function SkeletonRow() {
     </View>
   );
   return (
-    <View style={[styles.dataRow, { borderBottomColor: theme.border }]}>
+    <View style={[styles.dataRow, styles.rowBorder, { borderBottomColor: theme.border }]}>
       {bar(COLUMN_FLEX.code, 60)}
       {bar(COLUMN_FLEX.reason, 70)}
       {bar(COLUMN_FLEX.reported, 70)}
@@ -314,8 +409,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
-    borderBottomWidth: 1,
     gap: Spacing.two,
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+  },
+  picker: {
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingBottom: Spacing.three,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  underline: {
+    textDecorationLine: 'underline',
   },
   safetyTag: {
     borderRadius: Spacing.two,

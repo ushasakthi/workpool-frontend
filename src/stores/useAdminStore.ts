@@ -9,6 +9,7 @@ import {
   setUserSuspended,
   type ListUsersQuery,
 } from '@/api/admin.api';
+import type { ReportSeverity } from '@/constants/report-severity.enum';
 import { ReportStatus } from '@/constants/report-status.enum';
 import type { ActionLogEntry, AdminStats, AdminUsersPage } from '@/types/admin.types';
 import type { AdminReport } from '@/types/report.types';
@@ -25,7 +26,11 @@ interface AdminState {
   // open reports, oldest first; null = loading
   openReports: AdminReport[] | null;
   loadOpenReports: () => Promise<void>;
-  resolve: (id: string, status: ReportStatus.REVIEWED | ReportStatus.DISMISSED) => Promise<void>;
+  resolve: (
+    id: string,
+    status: ReportStatus.REVIEWED | ReportStatus.DISMISSED,
+    severity?: ReportSeverity,
+  ) => Promise<void>;
 
   // users matching the current filters; null = loading
   users: AdminUsersPage | null;
@@ -52,8 +57,8 @@ export const useAdminStore = create<AdminState>((set) => ({
   },
 
   // once resolved it's no longer open, so it leaves the queue
-  resolve: async (id, status) => {
-    await resolveReport(id, status);
+  resolve: async (id, status, severity) => {
+    await resolveReport(id, status, severity);
     set((state) => ({
       openReports: state.openReports?.filter((report) => report.id !== id) ?? null,
     }));

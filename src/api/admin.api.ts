@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { ReportSeverity } from '@/constants/report-severity.enum';
 import type { ReportStatus } from '@/constants/report-status.enum';
 import type { VerificationStatus } from '@/constants/verification-status.enum';
 import type { UserRole } from '@/constants/user-role.enum';
@@ -56,8 +57,10 @@ export async function listReports(status?: ReportStatus): Promise<AdminReport[]>
 export async function resolveReport(
   id: string,
   status: ReportStatus.REVIEWED | ReportStatus.DISMISSED,
+  // required by the backend when status is reviewed
+  severity?: ReportSeverity,
 ): Promise<void> {
-  await apiClient.patch(`/admin/reports/${id}`, { status });
+  await apiClient.patch(`/admin/reports/${id}`, { status, severity });
 }
 
 // same fields as backend ListUsersQueryDto

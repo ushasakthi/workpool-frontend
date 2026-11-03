@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
@@ -76,7 +77,9 @@ export default function AdminUsersScreen() {
   const loadUsers = useAdminStore((state) => state.loadUsers);
   const setSuspended = useAdminStore((state) => state.setSuspended);
 
-  const [search, setSearch] = useState('');
+  // the reports queue opens this screen already searched for the reported user
+  const params = useLocalSearchParams<{ search?: string }>();
+  const [search, setSearch] = useState(params.search ?? '');
   const [statusTab, setStatusTab] = useState<StatusTab>('all');
   const [roleTab, setRoleTab] = useState<RoleTab>('all');
   const [loadError, setLoadError] = useState<string | null>(null);
