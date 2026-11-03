@@ -9,6 +9,7 @@ export default function BookingsLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="review" options={modal} />
       <Stack.Screen name="report" options={modal} />
+      <Stack.Screen name="verify-pickup" options={modal} />
     </Stack>
   );
 }

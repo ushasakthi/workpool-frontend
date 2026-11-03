@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { BookingStatusTag } from '@/components/bookings/booking-status-tag';
+import { PickedUpRow, PickupPin } from '@/components/bookings/pickup-status';
 import { RideRoute } from '@/components/rides/ride-route';
 import { ThemedText } from '@/components/themed-text';
 import { BookingStatus } from '@/constants/booking-status.enum';
@@ -62,6 +63,13 @@ export function BookingCard({ booking, onOpenProfile, children }: BookingCardPro
         <ThemedText type="small" themeColor="textSecondary">
           {note}
         </ThemedText>
+      )}
+
+      {booking.status === BookingStatus.ACCEPTED && booking.pickupPin && (
+        <PickupPin pin={booking.pickupPin} />
+      )}
+      {booking.status === BookingStatus.ACCEPTED && booking.pickupVerifiedAt && (
+        <PickedUpRow at={booking.pickupVerifiedAt} />
       )}
 
       {children}

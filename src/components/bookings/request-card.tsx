@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/admin/avatar';
+import { PickedUpRow } from '@/components/bookings/pickup-status';
 import { ThemedText } from '@/components/themed-text';
 import { TrustScoreBadge } from '@/components/trust/trust-score-badge';
 import { Button } from '@/components/ui/button';
@@ -20,11 +21,19 @@ interface RequestCardProps {
   busy: RequestAction | null;
   onAction: (action: RequestAction) => void;
   onReport: () => void;
+  onVerifyPickup: () => void;
   onOpenProfile: () => void;
 }
 
 // driver view of one booking on their ride
-export function RequestCard({ request, busy, onAction, onReport, onOpenProfile }: RequestCardProps) {
+export function RequestCard({
+  request,
+  busy,
+  onAction,
+  onReport,
+  onVerifyPickup,
+  onOpenProfile,
+}: RequestCardProps) {
   const theme = useTheme();
   const seats = request.seatsRequested;
   const seatsLeft = request.ride.seatsAvailable;
@@ -79,18 +88,27 @@ export function RequestCard({ request, busy, onAction, onReport, onOpenProfile }
         </>
       )}
 
+      {request.status === BookingStatus.ACCEPTED && request.pickupVerifiedAt && (
+        <PickedUpRow at={request.pickupVerifiedAt} />
+      )}
+
+      {/* the ride can only be completed after the PIN check at pickup */}
       {request.status === BookingStatus.ACCEPTED && (
         <View style={styles.actions}>
           <View style={styles.grow}>
             <Button label="Report" variant="soft" disabled={busy !== null} onPress={onReport} />
           </View>
           <View style={styles.grow}>
-            <Button
-              label="Mark completed"
-              loading={busy === 'complete'}
-              disabled={busy !== null}
-              onPress={() => onAction('complete')}
-            />
+            {request.pickupVerifiedAt ? (
+              <Button
+                label="Mark completed"
+                loading={busy === 'complete'}
+                disabled={busy !== null}
+                onPress={() => onAction('complete')}
+              />
+            ) : (
+              <Button label="Enter pickup PIN" disabled={busy !== null} onPress={onVerifyPickup} />
+            )}
           </View>
         </View>
       )}

@@ -45,6 +45,11 @@ export function formatSeatsLeft(seats: number): string {
 }
 
 // "today", "yesterday", "3 days ago", "2 weeks ago", "5 months ago"
+// "8:17 AM", in the phone's own timezone
+export function formatClockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 export function formatTimeAgo(iso: string, now: Date = new Date()): string {
   const days = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
   if (days <= 0) return 'today';

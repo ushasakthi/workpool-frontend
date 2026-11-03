@@ -12,10 +12,14 @@ export interface Booking {
   seatsRequested: number;
   requestedAt: string;
   respondedAt?: string;
+  // set when the driver typed the right pickup PIN
+  pickupVerifiedAt?: string;
 }
 
 // from GET /bookings/me, with the ride and the other person
 export interface BookingListItem extends Booking {
+  // passenger side only, while accepted and not picked up yet
+  pickupPin?: string;
   ride: {
     origin: GeoPoint;
     destination: GeoPoint;

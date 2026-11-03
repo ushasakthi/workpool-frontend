@@ -53,6 +53,7 @@ export const Icons = {
   chevronUp: { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' },
   savings: { ios: 'banknote', android: 'savings', web: 'savings' },
   leaf: { ios: 'leaf', android: 'eco', web: 'eco' },
+  backspace: { ios: 'delete.left', android: 'backspace', web: 'backspace' },
   search: { ios: 'magnifyingglass', android: 'search', web: 'search' },
   searchOff: { ios: 'magnifyingglass', android: 'search_off', web: 'search_off' },
   history: { ios: 'clock.arrow.circlepath', android: 'history', web: 'history' },

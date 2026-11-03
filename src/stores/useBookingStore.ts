@@ -8,6 +8,7 @@ import {
   getMyBookings,
   getSavings,
   rejectBooking,
+  verifyPickup,
   type CreateBookingInput,
 } from '@/api/bookings.api';
 import { createReport, type CreateReportInput } from '@/api/reports.api';
@@ -32,6 +33,7 @@ interface BookingState {
   loadRequests: () => Promise<void>;
   accept: (id: string) => Promise<void>;
   decline: (id: string) => Promise<void>;
+  verifyPickup: (id: string, pin: string) => Promise<void>;
   complete: (id: string) => Promise<void>;
 
   // one month of estimated savings; null = loading
@@ -82,6 +84,11 @@ export const useBookingStore = create<BookingState>((set) => ({
     set((state) => ({ requests: setStatus(state.requests, booking) }));
   },
 
+  verifyPickup: async (id, pin) => {
+    const booking = await verifyPickup(id, pin);
+    set((state) => ({ requests: setStatus(state.requests, booking) }));
+  },
+
   // completing frees the seat again (rides repeat weekly)
   complete: async (id) => {
     const booking = await completeBooking(id);
@@ -109,10 +116,13 @@ export const useBookingStore = create<BookingState>((set) => ({
   },
 }));
 
+// copies the new status (and pickup time) onto the card already in the list
 function setStatus(list: BookingList, updated: Booking): BookingList {
   if (!list) return null;
   return list.map((item) =>
-    item.id === updated.id ? { ...item, status: updated.status } : item,
+    item.id === updated.id
+      ? { ...item, status: updated.status, pickupVerifiedAt: updated.pickupVerifiedAt }
+      : item,
   );
 }
 

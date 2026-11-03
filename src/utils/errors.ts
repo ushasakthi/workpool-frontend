@@ -6,6 +6,11 @@ const TIMEOUT_MESSAGE = 'The server took too long to respond. Please try again.'
 const SERVER_ERROR_MESSAGE = 'Something went wrong on our side. Please try again in a moment.';
 const RATE_LIMIT_MESSAGE = 'Too many attempts. Please wait a minute and try again.';
 
+// the HTTP status of a failed request, undefined if the server never answered
+export function errorStatus(error: unknown): number | undefined {
+  return isAxiosError(error) ? error.response?.status : undefined;
+}
+
 // One place that turns any failed request into a sentence a user can act on.
 export function getErrorMessage(error: unknown): string {
   if (!isAxiosError(error)) {

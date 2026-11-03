@@ -49,6 +49,15 @@ export async function rejectBooking(id: string): Promise<Booking> {
   return response.data.data;
 }
 
+// driver types the PIN the passenger shows at pickup; 400 = wrong PIN
+export async function verifyPickup(id: string, pin: string): Promise<Booking> {
+  const response = await apiClient.patch<SuccessResponse<Booking>>(
+    `/bookings/${id}/verify-pickup`,
+    { pin },
+  );
+  return response.data.data;
+}
+
 export async function completeBooking(id: string): Promise<Booking> {
   const response = await apiClient.patch<SuccessResponse<Booking>>(`/bookings/${id}/complete`);
   return response.data.data;

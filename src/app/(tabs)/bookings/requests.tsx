@@ -136,6 +136,9 @@ export default function RideRequestsScreen() {
                   onReport={() =>
                     router.push({ pathname: '/bookings/report', params: { bookingId: request.id } })
                   }
+                  onVerifyPickup={() =>
+                    router.push({ pathname: '/bookings/verify-pickup', params: { bookingId: request.id } })
+                  }
                   onOpenProfile={() =>
                     router.push({
                       pathname: '/profile/[userId]',
