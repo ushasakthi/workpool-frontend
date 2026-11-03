@@ -1,170 +1,256 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { getAdminStats, listVerifications, type AdminStats } from '@/api/admin.api';
-import { Avatar } from '@/components/admin/avatar';
-import { StatusBadge, statusBadgeTone } from '@/components/admin/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
+import { Button } from '@/components/ui/button';
+import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
-import { VerificationStatus } from '@/constants/verification-status.enum';
 import { useTheme } from '@/hooks/use-theme';
-import { useAuthStore } from '@/stores/useAuthStore';
-import type { VerificationSubmission } from '@/types/user.types';
+import { useAdminStore } from '@/stores/useAdminStore';
+import type { AdminStats } from '@/types/admin.types';
 import { getErrorMessage } from '@/utils/errors';
-import { formatDate } from '@/utils/formatters';
-import { getOverallVerificationStatus } from '@/utils/verification';
+import { formatTimeAgo } from '@/utils/formatters';
 
-const RECENT_COUNT = 5;
-
-export default function AdminHomeScreen() {
-  const theme = useTheme();
+export default function AdminDashboardScreen() {
   const router = useRouter();
-  const adminName = useAuthStore((state) => state.user?.name) ?? 'Admin';
-
-  const [submissions, setSubmissions] = useState<VerificationSubmission[] | null>(null);
-  const [stats, setStats] = useState<AdminStats | null>(null);
+  const stats = useAdminStore((state) => state.stats);
+  const loadedAt = useAdminStore((state) => state.statsLoadedAt);
+  const loadStats = useAdminStore((state) => state.loadStats);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const [verifications, adminStats] = await Promise.all([listVerifications(), getAdminStats()]);
-        if (cancelled) return;
-        setSubmissions(verifications);
-        setStats(adminStats);
-      } catch (err) {
-        if (!cancelled) setError(getErrorMessage(err));
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const pendingCount = useMemo(
-    () =>
-      (submissions ?? []).filter(
-        (item) =>
-          getOverallVerificationStatus(item.verification.identityStatus, item.verification.workplaceStatus) ===
-          VerificationStatus.PENDING,
-      ).length,
-    [submissions],
+  // fresh numbers every time the dashboard is opened
+  useFocusEffect(
+    useCallback(() => {
+      setError(null);
+      void loadStats().catch((err) => setError(getErrorMessage(err)));
+    }, [loadStats]),
   );
-
-  const recentSubmissions = useMemo(() => {
-    if (!submissions) return [];
-    return [...submissions]
-      .sort((a, b) => {
-        const aTime = a.verification.submittedAt ? new Date(a.verification.submittedAt).getTime() : 0;
-        const bTime = b.verification.submittedAt ? new Date(b.verification.submittedAt).getTime() : 0;
-        return bTime - aTime;
-      })
-      .slice(0, RECENT_COUNT);
-  }, [submissions]);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.headingGroup}>
-        <ThemedText type="title" style={styles.title}>
-          Good morning, {adminName}
-        </ThemedText>
-        <ThemedText themeColor="textSecondary">Here&apos;s what&apos;s happening with WorkPool today.</ThemedText>
+      <View style={styles.titleRow}>
+        <View style={styles.grow}>
+          <ThemedText type="title" style={styles.title}>
+            Dashboard
+          </ThemedText>
+          <ThemedText themeColor="textSecondary">All WorkPool users</ThemedText>
+        </View>
+        {loadedAt && (
+          <ThemedText type="small" themeColor="textSecondary">
+            Updated {loadedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+          </ThemedText>
+        )}
       </View>
 
-      {error && <Banner message={error} />}
+      {error && (
+        <View style={styles.errorRow}>
+          <View style={styles.grow}>
+            <Banner message={error} />
+          </View>
+          <Button
+            label="Try again"
+            variant="soft"
+            onPress={() => {
+              setError(null);
+              void loadStats().catch((err) => setError(getErrorMessage(err)));
+            }}
+          />
+        </View>
+      )}
 
       <View style={styles.statsRow}>
-        <StatCard label="Pending verifications" value={submissions === null ? null : pendingCount} />
-        <StatCard label="Active passengers" value={stats?.activePassengers ?? null} />
-        <StatCard label="Active riders" value={stats?.activeRiders ?? null} />
-        {/* No rides/bookings module yet — shown as a placeholder rather than a fabricated number. */}
-        <StatCard label="Rides today" value={null} note="Not tracked yet" />
+        {stats ? <StatCards stats={stats} /> : <StatCardSkeletons />}
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
-        <View style={styles.cardHeader}>
-          <ThemedText type="smallBold" style={styles.cardTitle}>
-            Recent verification requests
-          </ThemedText>
-          <Pressable onPress={() => router.push('/verifications')}>
-            <ThemedText type="linkPrimary" themeColor="primary">
-              View all
-            </ThemedText>
-          </Pressable>
+      <ThemedText type="smallBold">Queues</ThemedText>
+      <View style={styles.statsRow}>
+        <QueueCard
+          icon="shieldCheck"
+          title="Verification queue"
+          count={stats?.pendingVerifications}
+          detail={stats && verificationDetail(stats)}
+          onPress={() => router.push('/verifications')}
+        />
+        <QueueCard
+          icon="flag"
+          title="Reports queue"
+          count={stats?.openReports}
+          detail={stats && reportsDetail(stats)}
+          urgent={(stats?.openReports ?? 0) > 0}
+          onPress={() => router.push('/reports')}
+        />
+      </View>
+
+      {!stats && !error && (
+        <View style={styles.loadingLine}>
+          <ActivityIndicator />
+          <ThemedText themeColor="textSecondary">Loading dashboard…</ThemedText>
         </View>
+      )}
 
-        {submissions === null && (
-          <ThemedText themeColor="textSecondary" style={styles.emptyRow}>
-            Loading…
-          </ThemedText>
-        )}
-
-        {submissions !== null && recentSubmissions.length === 0 && (
-          <ThemedText themeColor="textSecondary" style={styles.emptyRow}>
-            No verification requests yet.
-          </ThemedText>
-        )}
-
-        {recentSubmissions.map((item, index) => {
-          const status = getOverallVerificationStatus(
-            item.verification.identityStatus,
-            item.verification.workplaceStatus,
-          );
-          return (
-            <Pressable
-              key={item.id}
-              style={[
-                styles.row,
-                index < recentSubmissions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
-              ]}
-              onPress={() => router.push(`/verifications/${item.id}`)}>
-              <View style={styles.rowLeft}>
-                <Avatar name={item.name} />
-                <View>
-                  <ThemedText type="smallBold">{item.name}</ThemedText>
-                  <ThemedText themeColor="textSecondary" type="small">
-                    {item.email}
-                    {item.verification.submittedAt
-                      ? ` · submitted ${formatDate(item.verification.submittedAt)}`
-                      : ''}
-                  </ThemedText>
-                </View>
-              </View>
-              <StatusBadge
-                label={status.charAt(0).toUpperCase() + status.slice(1)}
-                tone={statusBadgeTone(status)}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
+      {stats?.totalUsers === 0 && (
+        <Banner
+          tone="success"
+          icon="infoCircle"
+          message="No one has joined yet. Stats fill in once employees sign up."
+        />
+      )}
     </ScrollView>
   );
 }
 
-function StatCard({ label, value, note }: { label: string; value: number | null; note?: string }) {
-  const theme = useTheme();
+// "12 pending · oldest submitted 2 days ago"
+function verificationDetail(stats: AdminStats): string {
+  if (stats.pendingVerifications === 0 || !stats.oldestPendingVerificationAt) {
+    return 'Nothing waiting';
+  }
+  return `${stats.pendingVerifications} pending · oldest submitted ${formatTimeAgo(stats.oldestPendingVerificationAt)}`;
+}
 
+// "7 open · 2 safety · oldest filed 6 days ago"
+function reportsDetail(stats: AdminStats): string {
+  if (stats.openReports === 0 || !stats.oldestOpenReportAt) {
+    return 'Nothing waiting';
+  }
+  return `${stats.openReports} open · ${stats.openSafetyReports} safety · oldest filed ${formatTimeAgo(stats.oldestOpenReportAt)}`;
+}
+
+function StatCards({ stats }: { stats: AdminStats }) {
+  const none = 'None yet';
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      <ThemedText themeColor="textSecondary" type="small">
+    <>
+      <StatCard
+        label="Total users"
+        value={stats.totalUsers}
+        detail={
+          stats.totalUsers === 0
+            ? 'No sign-ups yet'
+            : stats.newUsersThisWeek === 0
+              ? 'No new sign-ups this week'
+              : `+${stats.newUsersThisWeek} this week`
+        }
+      />
+      <StatCard
+        label="Active rides"
+        value={stats.activeRides}
+        detail={stats.activeRides === 0 ? none : 'Taking bookings now'}
+      />
+      <StatCard
+        label="Completed rides"
+        value={stats.completedRides}
+        detail={stats.completedRides === 0 ? none : `${stats.completedRidesThisMonth} this month`}
+      />
+      <StatCard
+        label="Open reports"
+        value={stats.openReports}
+        detail={
+          stats.openReports === 0
+            ? none
+            : stats.openSafetyReports > 0
+              ? `${stats.openSafetyReports} flagged safety`
+              : 'No safety flags'
+        }
+        urgent={stats.openSafetyReports > 0}
+      />
+    </>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  detail,
+  urgent = false,
+}: {
+  label: string;
+  value: number;
+  detail: string;
+  // red detail text, the words still say why
+  urgent?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <ThemedText type="small" themeColor="textSecondary">
         {label}
       </ThemedText>
-      <ThemedText type="title" style={styles.statValue}>
-        {value === null ? (note ? '—' : '…') : value}
+      <ThemedText style={styles.statValue}>{value.toLocaleString()}</ThemedText>
+      <ThemedText
+        type={urgent ? 'smallBold' : 'small'}
+        themeColor={urgent ? 'error' : 'textSecondary'}>
+        {detail}
       </ThemedText>
-      {note && (
-        <ThemedText themeColor="textSecondary" type="small">
-          {note}
-        </ThemedText>
-      )}
     </View>
+  );
+}
+
+function StatCardSkeletons() {
+  const theme = useTheme();
+  return (
+    <>
+      {['Total users', 'Active rides', 'Completed rides', 'Open reports'].map((label) => (
+        <View
+          key={label}
+          style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {label}
+          </ThemedText>
+          <View style={[styles.skeletonValue, { backgroundColor: theme.backgroundSelected }]} />
+          <View style={[styles.skeletonLine, { backgroundColor: theme.backgroundElement }]} />
+        </View>
+      ))}
+    </>
+  );
+}
+
+function QueueCard({
+  icon,
+  title,
+  count,
+  detail,
+  urgent = false,
+  onPress,
+}: {
+  icon: keyof typeof Icons;
+  title: string;
+  // undefined while loading
+  count?: number;
+  detail?: string | null;
+  urgent?: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        styles.queueCard,
+        { backgroundColor: theme.background, borderColor: theme.border },
+        pressed && styles.pressed,
+      ]}>
+      <View style={[styles.queueIcon, { backgroundColor: theme.primarySoft }]}>
+        <SymbolView name={Icons[icon]} size={22} tintColor={theme.primary} />
+      </View>
+      <View style={styles.grow}>
+        <ThemedText type="smallBold">{title}</ThemedText>
+        {detail ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {detail}
+          </ThemedText>
+        ) : (
+          <View style={[styles.skeletonLine, { backgroundColor: theme.backgroundElement }]} />
+        )}
+      </View>
+      <ThemedText style={styles.queueCount} themeColor={urgent ? 'error' : 'text'}>
+        {count ?? '—'}
+      </ThemedText>
+      <SymbolView name={Icons.chevronRight} size={16} tintColor={theme.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -173,59 +259,78 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.four,
   },
-  headingGroup: {
-    gap: Spacing.half,
+  grow: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.three,
   },
   title: {
     fontSize: 28,
     lineHeight: 34,
   },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   statsRow: {
     flexDirection: 'row',
-    gap: Spacing.three,
     flexWrap: 'wrap',
+    gap: Spacing.three,
   },
-  statCard: {
+  card: {
     flex: 1,
-    minWidth: 180,
+    minWidth: 200,
     borderWidth: 1,
-    borderRadius: Spacing.three,
+    borderRadius: Spacing.four,
     padding: Spacing.four,
     gap: Spacing.one,
   },
   statValue: {
+    fontSize: 36,
+    lineHeight: 44,
+    fontWeight: 700,
+  },
+  skeletonValue: {
+    width: 120,
+    height: 32,
+    borderRadius: Spacing.three,
+    marginVertical: Spacing.two,
+  },
+  skeletonLine: {
+    width: 140,
+    height: 10,
+    borderRadius: Spacing.one,
+    marginTop: Spacing.one,
+  },
+  queueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    minWidth: 320,
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  queueIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  queueCount: {
     fontSize: 28,
     lineHeight: 34,
+    fontWeight: 700,
   },
-  card: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    overflow: 'hidden',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.four,
-    paddingBottom: Spacing.three,
-  },
-  cardTitle: {
-    fontSize: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-  },
-  rowLeft: {
+  loadingLine: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.two,
-  },
-  emptyRow: {
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.four,
   },
 });

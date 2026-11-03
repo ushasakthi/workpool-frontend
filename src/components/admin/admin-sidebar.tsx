@@ -6,31 +6,35 @@ import { ThemedText } from '@/components/themed-text';
 import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAdminStore } from '@/stores/useAdminStore';
 
-const SIDEBAR_WIDTH = 240;
+const SIDEBAR_WIDTH = 264;
 
 interface NavItem {
-  href: '/home' | '/verifications' | '/passengers' | '/riders' | '/report' | '/account' | '/settings';
+  href: '/home' | '/verifications' | '/reports' | '/users' | '/audit-log';
   label: string;
   icon: keyof typeof Icons;
 }
 
-const MAIN_NAV: NavItem[] = [
-  { href: '/home', label: 'Home', icon: 'dashboard' },
-  { href: '/verifications', label: 'Verifications', icon: 'shieldCheck' },
-  { href: '/passengers', label: 'Passengers', icon: 'people' },
-  { href: '/riders', label: 'Riders', icon: 'car' },
-  { href: '/report', label: 'Report', icon: 'barChart' },
-];
-
-const SECONDARY_NAV: NavItem[] = [
-  { href: '/account', label: 'My profile', icon: 'personCircle' },
-  { href: '/settings', label: 'Settings', icon: 'settingsGear' },
+const NAV: NavItem[] = [
+  { href: '/home', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/verifications', label: 'Verification queue', icon: 'shieldCheck' },
+  { href: '/reports', label: 'Reports', icon: 'flag' },
+  { href: '/users', label: 'Users', icon: 'people' },
+  { href: '/audit-log', label: 'Audit log', icon: 'history' },
 ];
 
 export function AdminSidebar() {
   const theme = useTheme();
   const pathname = usePathname();
+  const stats = useAdminStore((state) => state.stats);
+  // the reports screen's live list is newer than the stats when it's loaded
+  const openReports = useAdminStore((state) => state.openReports?.length);
+
+  const counts: Partial<Record<NavItem['href'], number>> = {
+    '/verifications': stats?.pendingVerifications,
+    '/reports': openReports ?? stats?.openReports,
+  };
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -38,21 +42,30 @@ export function AdminSidebar() {
 
   function renderItem(item: NavItem) {
     const active = isActive(item.href);
-    // Link's asChild clones this child via expo-router's <Slot>, which expects a single
-    // flattened style object rather than an array — flatten before handing it off.
+    const count = counts[item.href];
+    // Link asChild needs one style object, not an array
     const navItemStyle = StyleSheet.flatten([styles.navItem, active && { backgroundColor: theme.primarySoft }]);
 
     return (
-      <Link key={item.href} href={item.href} asChild>
+      // replace, not push: switching sections shouldn't stack up copies of screens
+      <Link key={item.href} href={item.href} replace asChild>
         <Pressable style={navItemStyle}>
           <SymbolView
             name={Icons[item.icon]}
             size={18}
             tintColor={active ? theme.primary : theme.textSecondary}
           />
-          <ThemedText type="smallBold" themeColor={active ? 'primary' : 'textSecondary'}>
+          <ThemedText
+            type="smallBold"
+            themeColor={active ? 'primary' : 'textSecondary'}
+            style={styles.grow}>
             {item.label}
           </ThemedText>
+          {count !== undefined && (
+            <ThemedText type="smallBold" themeColor={active ? 'primary' : 'textSecondary'}>
+              {count}
+            </ThemedText>
+          )}
         </Pressable>
       </Link>
     );
@@ -66,19 +79,15 @@ export function AdminSidebar() {
             WP
           </ThemedText>
         </View>
-        <View style={styles.wordmarkRow}>
+        <View>
           <ThemedText type="smallBold">WorkPool</ThemedText>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            Admin
+          <ThemedText type="small" themeColor="textSecondary">
+            Admin console
           </ThemedText>
         </View>
       </View>
 
-      <View style={styles.navGroup}>{MAIN_NAV.map(renderItem)}</View>
-
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-      <View style={styles.navGroup}>{SECONDARY_NAV.map(renderItem)}</View>
+      <View style={styles.navGroup}>{NAV.map(renderItem)}</View>
     </View>
   );
 }
@@ -96,16 +105,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   badge: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  wordmarkRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.one,
   },
   navGroup: {
     gap: Spacing.one,
@@ -118,7 +122,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: Spacing.three,
   },
-  divider: {
-    height: 1,
+  grow: {
+    flex: 1,
   },
 });

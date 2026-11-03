@@ -4,3 +4,6 @@ export * from './booking-status.enum';
 export * from './verification-status.enum';
 export * from './preferred-role.enum';
 export * from './weekday.enum';
+export * from './report-status.enum';
+export * from './report-category.enum';
+export * from './admin-action.enum';

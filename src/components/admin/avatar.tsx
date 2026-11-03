@@ -11,7 +11,8 @@ interface AvatarProps {
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  const initials = [parts[0]?.[0], parts[parts.length - 1]?.[0]].filter(Boolean);
+  // one-word names get one letter, not the same letter twice
+  const initials = [parts[0]?.[0], parts.length > 1 ? parts[parts.length - 1][0] : undefined].filter(Boolean);
   return initials.join('').toUpperCase() || '?';
 }
 
