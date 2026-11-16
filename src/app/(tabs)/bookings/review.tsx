@@ -24,11 +24,12 @@ const RATING_WORDS = ['', 'Poor', 'Fair', 'Okay', 'Good', 'Great'];
 export default function RateReviewScreen() {
   const router = useRouter();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
-  // the booking is already in a list: My bookings (passenger) or Ride requests (driver)
+  // the booking is already in a list: My bookings (passenger), Ride requests or Past rides (driver)
   const booking = useBookingStore(
     (state) =>
       state.myBookings?.find((b) => b.id === bookingId) ??
-      state.requests?.find((b) => b.id === bookingId),
+      state.requests?.find((b) => b.id === bookingId) ??
+      state.pastDrives?.find((b) => b.id === bookingId),
   );
   const markReviewed = useBookingStore((state) => state.markReviewed);
   const submitReview = useReviewStore((state) => state.submitReview);

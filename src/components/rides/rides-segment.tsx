@@ -7,7 +7,7 @@ import { UserRole } from '@/constants/user-role.enum';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-type SegmentKey = 'search' | 'my-rides' | 'post';
+type SegmentKey = 'search' | 'my-rides' | 'past';
 
 interface RidesSegmentProps {
   active: SegmentKey;
@@ -17,7 +17,7 @@ interface RidesSegmentProps {
 const SEGMENTS: { key: SegmentKey; label: string; href: Href; roles: UserRole[] }[] = [
   { key: 'search', label: 'Find a ride', href: '/rides/search', roles: [UserRole.BOTH] },
   { key: 'my-rides', label: 'My rides', href: '/rides/my-rides', roles: [UserRole.DRIVER, UserRole.BOTH] },
-  { key: 'post', label: 'Post a ride', href: '/rides/post', roles: [UserRole.DRIVER, UserRole.BOTH] },
+  { key: 'past', label: 'Past rides', href: '/rides/past', roles: [UserRole.DRIVER, UserRole.BOTH] },
 ];
 
 export function RidesSegment({ active }: RidesSegmentProps) {
@@ -36,10 +36,7 @@ export function RidesSegment({ active }: RidesSegmentProps) {
             key={segment.key}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            // "Post a ride" opens on top so back works, the others swap in place
-            onPress={() =>
-              segment.key === 'post' ? router.push(segment.href) : router.replace(segment.href)
-            }
+            onPress={() => router.replace(segment.href)}
             disabled={selected}
             style={[styles.segment, selected && { backgroundColor: theme.primary }]}>
             <ThemedText type="smallBold" themeColor={selected ? 'onPrimary' : 'textSecondary'}>

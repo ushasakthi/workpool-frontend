@@ -16,7 +16,7 @@ import { UserRole } from '@/constants/user-role.enum';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import type { BookingListItem } from '@/types/booking.types';
-import { isUpcoming } from '@/utils/bookings';
+import { isInPastWeeks, isUpcoming } from '@/utils/bookings';
 import { getErrorMessage } from '@/utils/errors';
 
 export default function MyBookingsScreen() {
@@ -67,7 +67,9 @@ export default function MyBookingsScreen() {
   }
 
   const upcoming = bookings?.filter(isUpcoming) ?? [];
-  const past = bookings?.filter((booking) => !isUpcoming(booking)) ?? [];
+  const now = new Date();
+  const past =
+    bookings?.filter((booking) => !isUpcoming(booking) && isInPastWeeks(booking, now)) ?? [];
 
   return (
     <Screen
