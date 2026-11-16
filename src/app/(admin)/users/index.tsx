@@ -1,9 +1,10 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -58,21 +59,23 @@ const COLUMN_FLEX = { user: 2.6, trust: 0.9, role: 1, verification: 1.1, account
 const ACTION_WIDTH = 140;
 // wait until typing pauses before searching
 const SEARCH_DELAY_MS = 300;
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 20;
 
-// the tabs and search box -> backend query params
-function toQuery(q: string, status: StatusTab, role: RoleTab): ListUsersQuery {
+// the tabs, search box and page -> backend query params
+function toQuery(q: string, status: StatusTab, role: RoleTab, page: number): ListUsersQuery {
   return {
     q: q.trim() || undefined,
     status: status === 'suspended' ? 'suspended' : undefined,
     verification: status === 'verified' || status === 'pending' ? status : undefined,
     role: role === 'all' ? undefined : role,
+    page,
     limit: PAGE_SIZE,
   };
 }
 
 export default function AdminUsersScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const users = useAdminStore((state) => state.users);
   const loadUsers = useAdminStore((state) => state.loadUsers);
   const setSuspended = useAdminStore((state) => state.setSuspended);
@@ -82,6 +85,7 @@ export default function AdminUsersScreen() {
   const [search, setSearch] = useState(params.search ?? '');
   const [statusTab, setStatusTab] = useState<StatusTab>('all');
   const [roleTab, setRoleTab] = useState<RoleTab>('all');
+  const [page, setPage] = useState(1);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -91,17 +95,34 @@ export default function AdminUsersScreen() {
   // admin is still typing, so only the last keystroke actually searches
   useEffect(() => {
     const timer = setTimeout(() => {
-      void loadUsers(toQuery(search, statusTab, roleTab))
+      void loadUsers(toQuery(search, statusTab, roleTab, page))
         .then(() => setLoadError(null))
         .catch((err) => setLoadError(getErrorMessage(err)));
     }, SEARCH_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [search, statusTab, roleTab, loadUsers]);
+  }, [search, statusTab, roleTab, page, loadUsers]);
+
+  // a new filter gives different results, so start again from page 1
+  function changeSearch(text: string) {
+    setSearch(text);
+    setPage(1);
+  }
+
+  function changeStatusTab(tab: StatusTab) {
+    setStatusTab(tab);
+    setPage(1);
+  }
+
+  function changeRoleTab(tab: RoleTab) {
+    setRoleTab(tab);
+    setPage(1);
+  }
 
   function clearFilters() {
     setSearch('');
     setStatusTab('all');
     setRoleTab('all');
+    setPage(1);
   }
 
   async function changeSuspension(user: AdminUser, suspended: boolean, reason?: string) {
@@ -118,8 +139,12 @@ export default function AdminUsersScreen() {
   }
 
   const subtitle = users
-    ? `${users.counts.all} users · ${users.items.length} shown · ${users.counts.suspended} suspended`
+    ? `${users.counts.all} users · ${users.total} match · ${users.counts.suspended} suspended`
     : 'Loading…';
+
+  const totalPages = users ? Math.max(1, Math.ceil(users.total / PAGE_SIZE)) : 1;
+  const firstShown = (page - 1) * PAGE_SIZE + 1;
+  const lastShown = users ? firstShown + users.items.length - 1 : 0;
 
   return (
     <View style={styles.flex}>
@@ -141,17 +166,17 @@ export default function AdminUsersScreen() {
             <SymbolView name={Icons.search} size={16} tintColor={theme.textSecondary} />
             <TextInput
               value={search}
-              onChangeText={setSearch}
+              onChangeText={changeSearch}
               placeholder="Search name or email"
               placeholderTextColor={theme.placeholder}
               style={[styles.searchInput, { color: theme.text }]}
             />
           </View>
           <View style={styles.statusTabs}>
-            <FilterTabs tabs={STATUS_TABS} value={statusTab} onChange={setStatusTab} />
+            <FilterTabs tabs={STATUS_TABS} value={statusTab} onChange={changeStatusTab} />
           </View>
           <View style={styles.roleTabs}>
-            <FilterTabs tabs={ROLE_TABS} value={roleTab} onChange={setRoleTab} />
+            <FilterTabs tabs={ROLE_TABS} value={roleTab} onChange={changeRoleTab} />
           </View>
         </View>
 
@@ -193,11 +218,37 @@ export default function AdminUsersScreen() {
               key={user.id}
               user={user}
               busy={busyId === user.id}
+              onOpen={() => router.push(`/users/${user.id}`)}
               onSuspend={() => setSuspending(user)}
               onReinstate={() => void changeSuspension(user, false)}
             />
           ))}
         </View>
+
+        {users !== null && users.total > 0 && (
+          <View style={styles.pagination}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Showing {firstShown}–{lastShown} of {users.total}
+            </ThemedText>
+            <View style={styles.pageButtons}>
+              <Button
+                label="Previous"
+                variant="soft"
+                disabled={page === 1}
+                onPress={() => setPage(page - 1)}
+              />
+              <ThemedText type="smallBold">
+                Page {page} of {totalPages}
+              </ThemedText>
+              <Button
+                label="Next"
+                variant="soft"
+                disabled={page >= totalPages}
+                onPress={() => setPage(page + 1)}
+              />
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* a new key per user gives the dialog fresh state, so the reason box starts empty */}
@@ -248,11 +299,13 @@ function verificationBadge(user: AdminUser): { label: string; tone: BadgeTone } 
 function UserRow({
   user,
   busy,
+  onOpen,
   onSuspend,
   onReinstate,
 }: {
   user: AdminUser;
   busy: boolean;
+  onOpen: () => void;
   onSuspend: () => void;
   onReinstate: () => void;
 }) {
@@ -261,7 +314,13 @@ function UserRow({
   const isAdmin = user.role === UserRole.ADMIN;
 
   return (
-    <View style={[styles.row, { borderBottomColor: theme.border }]}>
+    <Pressable
+      onPress={onOpen}
+      style={({ hovered }) => [
+        styles.row,
+        { borderBottomColor: theme.border },
+        hovered && { backgroundColor: theme.backgroundElement },
+      ]}>
       <View style={[styles.userCell, { flex: COLUMN_FLEX.user }]}>
         <Avatar name={user.name} size={36} />
         <View style={styles.grow}>
@@ -317,7 +376,7 @@ function UserRow({
           <Button label="Suspend" variant="soft" loading={busy} onPress={onSuspend} />
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -479,6 +538,17 @@ const styles = StyleSheet.create({
   },
   actionCell: {
     alignItems: 'flex-end',
+  },
+  pagination: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  pageButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
   },
   loadingLine: {
     flexDirection: 'row',

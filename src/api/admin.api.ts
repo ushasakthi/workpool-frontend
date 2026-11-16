@@ -3,7 +3,13 @@ import type { ReportSeverity } from '@/constants/report-severity.enum';
 import type { ReportStatus } from '@/constants/report-status.enum';
 import type { VerificationStatus } from '@/constants/verification-status.enum';
 import type { UserRole } from '@/constants/user-role.enum';
-import type { ActionLogEntry, AdminStats, AdminUser, AdminUsersPage } from '@/types/admin.types';
+import type {
+  ActionLogEntry,
+  AdminStats,
+  AdminUser,
+  AdminUserDetail,
+  AdminUsersPage,
+} from '@/types/admin.types';
 import type { AdminReport } from '@/types/report.types';
 import type { VerificationSubmission } from '@/types/user.types';
 
@@ -77,6 +83,11 @@ export async function listUsers(query: ListUsersQuery): Promise<AdminUsersPage> 
   const response = await apiClient.get<SuccessResponse<AdminUsersPage>>('/admin/users', {
     params: query,
   });
+  return response.data.data;
+}
+
+export async function getUserDetail(id: string): Promise<AdminUserDetail> {
+  const response = await apiClient.get<SuccessResponse<AdminUserDetail>>(`/admin/users/${id}`);
   return response.data.data;
 }
 

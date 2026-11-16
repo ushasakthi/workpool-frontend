@@ -1,6 +1,10 @@
 import { AdminAction } from '@/constants/admin-action.enum';
+import { BookingStatus } from '@/constants/booking-status.enum';
 import { UserRole } from '@/constants/user-role.enum';
 import { VerificationStatus } from '@/constants/verification-status.enum';
+import type { Ride } from '@/types/ride.types';
+import type { EmergencyContact, GeoPoint, TravelProfile } from '@/types/user.types';
+import type { Vehicle } from '@/types/vehicle.types';
 
 // Same shapes as backend admin.service.ts (admin screens only)
 export interface AdminStats {
@@ -34,6 +38,34 @@ export interface AdminUser {
   suspendedAt?: string;
   suspensionReason?: string;
   createdAt: string;
+}
+
+// a ride the user joined as a passenger
+export interface AdminJoinedRide {
+  bookingId: string;
+  status: BookingStatus;
+  seatsRequested: number;
+  requestedAt: string;
+  // null if the ride was deleted
+  ride: {
+    origin: GeoPoint;
+    destination: GeoPoint;
+    departureTime: string;
+    // shared fuel cost, not a fare
+    costContribution: number;
+  } | null;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  phone: string;
+  linkedinUrl?: string;
+  travelProfile?: TravelProfile;
+  emergencyContact?: EmergencyContact;
+  vehicles: Vehicle[];
+  // as the driver, newest first
+  ridesOffered: Ride[];
+  // as a passenger, newest first
+  ridesJoined: AdminJoinedRide[];
 }
 
 export interface AdminUsersPage {
