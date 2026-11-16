@@ -14,6 +14,8 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   trailingArrow?: boolean;
+  // shown before the label, e.g. "play" for Start trip
+  icon?: keyof typeof Icons;
 }
 
 export function Button({
@@ -23,6 +25,7 @@ export function Button({
   disabled = false,
   loading = false,
   trailingArrow = false,
+  icon,
 }: ButtonProps) {
   const theme = useTheme();
   const isDisabled = disabled || loading;
@@ -59,6 +62,7 @@ export function Button({
         <ActivityIndicator color={textColor[variant]} />
       ) : (
         <>
+          {icon && <SymbolView name={Icons[icon]} size={18} tintColor={textColor[variant]} />}
           <Text style={[styles.label, { color: textColor[variant] }]}>{label}</Text>
           {trailingArrow && (
             <SymbolView name={Icons.arrowRight} size={16} weight="semibold" tintColor={textColor[variant]} />
@@ -87,6 +91,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '700',
+    textAlign: 'center',
   },
   pressedOpacity: {
     opacity: 0.8,

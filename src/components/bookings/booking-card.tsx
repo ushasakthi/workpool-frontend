@@ -10,7 +10,7 @@ import { BookingStatus } from '@/constants/booking-status.enum';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { BookingListItem } from '@/types/booking.types';
-import { formatCost } from '@/utils/formatters';
+import { formatCost, formatDate, formatTravelDate } from '@/utils/formatters';
 import { formatDays } from '@/utils/schedule';
 
 interface BookingCardProps {
@@ -39,7 +39,13 @@ export function BookingCard({ booking, onOpenProfile, onSos, children }: Booking
   return (
     <View style={[styles.card, { borderColor: theme.border }]}>
       <View style={styles.headerRow}>
-        <ThemedText type="smallBold">{formatDays(booking.ride.daysOfWeek)}</ThemedText>
+        <ThemedText type="smallBold">
+          {booking.travelDate
+            ? formatTravelDate(booking.travelDate)
+            : booking.completedAt
+              ? formatDate(booking.completedAt)
+              : formatDays(booking.ride.daysOfWeek)}
+        </ThemedText>
         <BookingStatusTag status={booking.status} />
       </View>
 

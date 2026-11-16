@@ -6,6 +6,16 @@ export function formatDate(value: string): string {
   });
 }
 
+// "2026-11-18" -> "Wed, Nov 18"; UTC so the phone's time zone can't shift the day
+export function formatTravelDate(date: string): string {
+  return new Date(date).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 // "jordan@acme.com" -> "j••••n@acme.com"
 export function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
@@ -42,6 +52,11 @@ export function shortName(name: string): string {
 
 export function formatSeatsLeft(seats: number): string {
   return `${seats} seat${seats === 1 ? '' : 's'} left`;
+}
+
+// a ride's seatsAvailable is what's offered each day, not what's left
+export function formatSeatsPerDay(seats: number): string {
+  return `${seats} seat${seats === 1 ? '' : 's'} a day`;
 }
 
 // "today", "yesterday", "3 days ago", "2 weeks ago", "5 months ago"

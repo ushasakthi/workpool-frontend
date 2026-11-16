@@ -20,7 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useRideStore } from '@/stores/useRideStore';
 import type { RideMatch, SmsBreakdown } from '@/types/ride.types';
 import { getErrorMessage } from '@/utils/errors';
-import { formatCost, formatDistance, formatPercent, formatSeatsLeft } from '@/utils/formatters';
+import { formatCost, formatDistance, formatPercent, formatSeatsPerDay } from '@/utils/formatters';
 import { formatRideSchedule } from '@/utils/schedule';
 
 // plain-language "why this match", one row per SMS sub-score
@@ -76,7 +76,7 @@ export default function RideDetailScreen() {
       ) : (
         <RideDetail
           ride={current}
-          onRequest={() => router.push({ pathname: '/rides/request', params: { id: current.id } })}
+          onRequest={() => router.push({ pathname: '/ride-request', params: { id: current.id } })}
           onOpenDriver={() =>
             router.push({ pathname: '/profile/[userId]', params: { userId: current.driver.id } })
           }
@@ -149,7 +149,7 @@ function RideDetail({
       </View>
 
       <View style={styles.stats}>
-        <StatBox label="Seats" value={formatSeatsLeft(ride.seatsAvailable)} />
+        <StatBox label="Seats" value={formatSeatsPerDay(ride.seatsAvailable)} />
         <StatBox label="Cost contribution" value={formatCost(ride.costContribution)} />
       </View>
 

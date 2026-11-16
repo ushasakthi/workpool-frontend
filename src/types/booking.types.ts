@@ -10,10 +10,20 @@ export interface Booking {
   passengerId: string;
   status: BookingStatus;
   seatsRequested: number;
+  // "2026-11-18"; missing on bookings made before dates existed
+  travelDate?: string;
   requestedAt: string;
   respondedAt?: string;
   // set when the driver typed the right pickup PIN
   pickupVerifiedAt?: string;
+  completedAt?: string;
+}
+
+// from GET /bookings/days, one bookable day of a ride
+export interface TravelDay {
+  // "2026-11-18"
+  date: string;
+  seatsLeft: number;
 }
 
 // from GET /bookings/me, with the ride and the other person

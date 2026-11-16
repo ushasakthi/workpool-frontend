@@ -35,6 +35,9 @@ interface BookingState {
   decline: (id: string) => Promise<void>;
   verifyPickup: (id: string, pin: string) => Promise<void>;
   complete: (id: string) => Promise<void>;
+  // completed bookings on my rides, for "Past rides"
+  pastDrives: BookingList;
+  loadPastDrives: () => Promise<void>;
 
   // one month of estimated savings; null = loading
   savings: Savings | null;
@@ -74,9 +77,7 @@ export const useBookingStore = create<BookingState>((set) => ({
   // answered requests stay on screen with their result until the next reload
   accept: async (id) => {
     const booking = await acceptBooking(id);
-    set((state) => ({
-      requests: changeSeats(setStatus(state.requests, booking), booking.rideId, -booking.seatsRequested),
-    }));
+    set((state) => ({ requests: setStatus(state.requests, booking) }));
   },
 
   decline: async (id) => {
@@ -89,12 +90,15 @@ export const useBookingStore = create<BookingState>((set) => ({
     set((state) => ({ requests: setStatus(state.requests, booking) }));
   },
 
-  // completing frees the seat again (rides repeat weekly)
   complete: async (id) => {
     const booking = await completeBooking(id);
-    set((state) => ({
-      requests: changeSeats(setStatus(state.requests, booking), booking.rideId, booking.seatsRequested),
-    }));
+    set((state) => ({ requests: setStatus(state.requests, booking) }));
+  },
+
+  pastDrives: null,
+
+  loadPastDrives: async () => {
+    set({ pastDrives: await getMyBookings('driver', BookingStatus.COMPLETED) });
   },
 
   savings: null,
@@ -108,7 +112,11 @@ export const useBookingStore = create<BookingState>((set) => ({
     const mark = (list: BookingList): BookingList =>
       list?.map((item) => (item.id === bookingId ? { ...item, reviewedByMe: true } : item)) ??
       null;
-    set((state) => ({ myBookings: mark(state.myBookings), requests: mark(state.requests) }));
+    set((state) => ({
+      myBookings: mark(state.myBookings),
+      requests: mark(state.requests),
+      pastDrives: mark(state.pastDrives),
+    }));
   },
 
   reportIssue: async (input) => {
@@ -122,16 +130,6 @@ function setStatus(list: BookingList, updated: Booking): BookingList {
   return list.map((item) =>
     item.id === updated.id
       ? { ...item, status: updated.status, pickupVerifiedAt: updated.pickupVerifiedAt }
-      : item,
-  );
-}
-
-// accepting takes seats, completing gives them back, so other cards on that ride stay correct
-function changeSeats(list: BookingList, rideId: string, delta: number): BookingList {
-  if (!list) return null;
-  return list.map((item) =>
-    item.rideId === rideId
-      ? { ...item, ride: { ...item.ride, seatsAvailable: item.ride.seatsAvailable + delta } }
       : item,
   );
 }

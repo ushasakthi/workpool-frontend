@@ -35,6 +35,18 @@ function nextDeparture(ride: Pick<Ride, 'departureTime' | 'daysOfWeek'>, now: Da
   return nextOccurrence(timeOfDayFromISO(ride.departureTime), ride.daysOfWeek, now);
 }
 
+// a booking's own day ("2026-11-19") at the ride's time; local time, like the rest of Home
+function travelDateAt(travelDate: string, departureTime: string): Date {
+  return new Date(`${travelDate}T${timeOfDayFromISO(departureTime)}:00`);
+}
+
+// "2026-11-19" for a local date
+export function dateKey(at: Date): string {
+  const month = String(at.getMonth() + 1).padStart(2, '0');
+  const day = String(at.getDate()).padStart(2, '0');
+  return `${at.getFullYear()}-${month}-${day}`;
+}
+
 const OPEN_BOOKING: BookingStatus[] = [BookingStatus.REQUESTED, BookingStatus.ACCEPTED];
 
 export function findNextTrip(
@@ -47,17 +59,29 @@ export function findNextTrip(
 
   for (const booking of myBookings ?? []) {
     if (!OPEN_BOOKING.includes(booking.status) || booking.ride.status !== RideStatus.ACTIVE) continue;
-    trips.push({ side: 'passenger', at: nextDeparture(booking.ride, now), booking });
+    // older bookings have no travel date, so fall back to the next weekly run
+    if (booking.travelDate) {
+      if (booking.travelDate < dateKey(now)) continue;
+      trips.push({
+        side: 'passenger',
+        at: travelDateAt(booking.travelDate, booking.ride.departureTime),
+        booking,
+      });
+    } else {
+      trips.push({ side: 'passenger', at: nextDeparture(booking.ride, now), booking });
+    }
   }
 
   for (const ride of myRides ?? []) {
     if (ride.status !== RideStatus.ACTIVE) continue;
+    const at = nextDeparture(ride, now);
     const onRide = (requests ?? []).filter((item) => item.rideId === ride.id);
+    // seats are counted per day, so only that next run's bookings
     const seatsTaken = onRide
-      .filter((item) => item.status === BookingStatus.ACCEPTED)
+      .filter((item) => item.status === BookingStatus.ACCEPTED && item.travelDate === dateKey(at))
       .reduce((sum, item) => sum + item.seatsRequested, 0);
     const waiting = onRide.filter((item) => item.status === BookingStatus.REQUESTED).length;
-    trips.push({ side: 'driver', at: nextDeparture(ride, now), ride, seatsTaken, waiting });
+    trips.push({ side: 'driver', at, ride, seatsTaken, waiting });
   }
 
   trips.sort((a, b) => a.at.getTime() - b.at.getTime());

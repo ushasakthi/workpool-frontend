@@ -16,7 +16,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { groupByRide } from '@/utils/bookings';
 import { getErrorMessage } from '@/utils/errors';
-import { formatSeatsLeft } from '@/utils/formatters';
+import { formatSeatsPerDay } from '@/utils/formatters';
 import { formatRideSchedule } from '@/utils/schedule';
 
 const DRIVER_ROLES: UserRole[] = [UserRole.DRIVER, UserRole.BOTH];
@@ -124,7 +124,7 @@ export default function RideRequestsScreen() {
                   {formatRideSchedule(ride.daysOfWeek, ride.departureTime)}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {formatSeatsLeft(ride.seatsAvailable)}
+                  {formatSeatsPerDay(ride.seatsAvailable)}
                 </ThemedText>
               </View>
               {group.items.map((request) => (
@@ -135,9 +135,6 @@ export default function RideRequestsScreen() {
                   onAction={(action) => void act(request.id, action)}
                   onReport={() =>
                     router.push({ pathname: '/bookings/report', params: { bookingId: request.id } })
-                  }
-                  onVerifyPickup={() =>
-                    router.push({ pathname: '/bookings/verify-pickup', params: { bookingId: request.id } })
                   }
                   onSos={() =>
                     router.push({ pathname: '/bookings/sos', params: { bookingId: request.id } })

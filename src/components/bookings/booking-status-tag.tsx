@@ -53,6 +53,13 @@ const TAGS: Record<BookingStatus, TagStyle> = {
     text: 'text',
     dashed: false,
   },
+  [BookingStatus.NOT_PICKED_UP]: {
+    label: 'Not picked up',
+    icon: 'xmarkCircle',
+    background: 'warningSoft',
+    text: 'warning',
+    dashed: false,
+  },
 };
 
 export function BookingStatusTag({ status }: { status: BookingStatus }) {

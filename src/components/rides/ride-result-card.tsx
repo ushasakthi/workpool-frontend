@@ -9,7 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { VerificationStatus } from '@/constants/verification-status.enum';
 import { useTheme } from '@/hooks/use-theme';
 import type { RideMatch } from '@/types/ride.types';
-import { formatCost, formatDistance, formatSeatsLeft, shortName } from '@/utils/formatters';
+import { formatCost, formatDistance, formatSeatsPerDay, shortName } from '@/utils/formatters';
 import { getOverallVerificationStatus } from '@/utils/verification';
 
 interface RideResultCardProps {
@@ -63,7 +63,7 @@ export function RideResultCard({ ride, onPress }: RideResultCardProps) {
           )}
         </View>
         <ThemedText type="small" themeColor="textSecondary">
-          {formatSeatsLeft(ride.seatsAvailable)}
+          {formatSeatsPerDay(ride.seatsAvailable)}
         </ThemedText>
       </View>
     </Pressable>

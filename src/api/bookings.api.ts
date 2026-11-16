@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 import type { BookingStatus } from '@/constants/booking-status.enum';
-import type { Booking, BookingListItem, Savings } from '@/types/booking.types';
+import type { Booking, BookingListItem, Savings, TravelDay } from '@/types/booking.types';
 
 interface SuccessResponse<T> {
   success: true;
@@ -11,6 +11,8 @@ interface SuccessResponse<T> {
 export interface CreateBookingInput {
   rideId: string;
   seatsRequested: number;
+  // "2026-11-18"
+  travelDate: string;
 }
 
 // "passenger" = bookings I made, "driver" = requests on rides I drive
@@ -18,6 +20,13 @@ export type BookingSide = 'passenger' | 'driver';
 
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const response = await apiClient.post<SuccessResponse<Booking>>('/bookings', input);
+  return response.data.data;
+}
+
+export async function getTravelDays(rideId: string): Promise<TravelDay[]> {
+  const response = await apiClient.get<SuccessResponse<TravelDay[]>>('/bookings/days', {
+    params: { rideId },
+  });
   return response.data.data;
 }
 

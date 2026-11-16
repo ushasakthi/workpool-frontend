@@ -123,8 +123,8 @@ function PassengerFooter({ trip }: { trip: Extract<NextTrip, { side: 'passenger'
 
 function DriverFooter({ trip }: { trip: Extract<NextTrip, { side: 'driver' }> }) {
   const theme = useTheme();
-  // accepting a request lowers seatsAvailable, so taken + left = seats offered
-  const totalSeats = trip.seatsTaken + trip.ride.seatsAvailable;
+  // seatsAvailable is what the ride offers each day
+  const totalSeats = trip.ride.seatsAvailable;
 
   return (
     <View style={styles.personRow}>

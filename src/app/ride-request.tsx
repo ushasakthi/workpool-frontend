@@ -3,7 +3,9 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { getTravelDays } from '@/api/bookings.api';
 import { Avatar } from '@/components/admin/avatar';
+import { TravelDatePicker } from '@/components/bookings/travel-date-picker';
 import { RideRoute } from '@/components/rides/ride-route';
 import { ThemedText } from '@/components/themed-text';
 import { TrustScoreBadge } from '@/components/trust/trust-score-badge';
@@ -16,9 +18,10 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useRideStore } from '@/stores/useRideStore';
+import type { TravelDay } from '@/types/booking.types';
 import type { RideMatch } from '@/types/ride.types';
 import { getErrorMessage } from '@/utils/errors';
-import { formatCost, formatSeatsLeft } from '@/utils/formatters';
+import { formatCost, formatSeatsLeft, formatTravelDate } from '@/utils/formatters';
 import { formatRideSchedule } from '@/utils/schedule';
 
 function seatWord(seats: number): string {
@@ -33,6 +36,8 @@ export default function RequestRideScreen() {
   const requestRide = useBookingStore((state) => state.requestRide);
 
   const [seats, setSeats] = useState(1);
+  const [days, setDays] = useState<TravelDay[] | null>(null);
+  const [travelDate, setTravelDate] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +49,30 @@ export default function RequestRideScreen() {
     void loadRide(id).catch((err) => setError(getErrorMessage(err)));
   }, [current, id, loadRide]);
 
+  useEffect(() => {
+    getTravelDays(id)
+      .then((list) => {
+        setDays(list);
+        // start on the first day that still has room
+        setTravelDate(list.find((day) => day.seatsLeft > 0)?.date ?? null);
+      })
+      .catch((err) => setError(getErrorMessage(err)));
+  }, [id]);
+
+  const seatsLeft = days?.find((day) => day.date === travelDate)?.seatsLeft ?? 0;
+
+  function changeDate(date: string) {
+    setTravelDate(date);
+    // the new day may have fewer seats left
+    setSeats(1);
+  }
+
   async function send() {
+    if (!travelDate) return;
     setError(null);
     setSending(true);
     try {
-      await requestRide({ rideId: id, seatsRequested: seats });
+      await requestRide({ rideId: id, seatsRequested: seats, travelDate });
       setSent(true);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -57,22 +81,27 @@ export default function RequestRideScreen() {
     }
   }
 
-  if (sent && current) {
+  if (sent && current && travelDate) {
     return (
       <SentState
         ride={current}
         seats={seats}
-        onViewBookings={() => router.replace('/bookings')}
+        travelDate={travelDate}
+        onViewBookings={() => {
+          // close the sheet first, then switch tab
+          router.back();
+          router.navigate('/bookings');
+        }}
         onBack={() => router.back()}
       />
     );
   }
 
   return (
-    <Screen header={<CloseHeader onClose={() => router.back()} />} underTabBar>
+    <Screen header={<CloseHeader onClose={() => router.back()} />}>
       {error && <Banner message={error} />}
 
-      {current === null ? (
+      {current === null || days === null ? (
         !error && (
           <>
             <Skeleton height={150} radius={Spacing.four} />
@@ -83,6 +112,10 @@ export default function RequestRideScreen() {
       ) : (
         <RequestForm
           ride={current}
+          days={days}
+          travelDate={travelDate}
+          onChangeDate={changeDate}
+          seatsLeft={seatsLeft}
           seats={seats}
           onChangeSeats={setSeats}
           sending={sending}
@@ -95,12 +128,20 @@ export default function RequestRideScreen() {
 
 function RequestForm({
   ride,
+  days,
+  travelDate,
+  onChangeDate,
+  seatsLeft,
   seats,
   onChangeSeats,
   sending,
   onSend,
 }: {
   ride: RideMatch;
+  days: TravelDay[];
+  travelDate: string | null;
+  onChangeDate: (date: string) => void;
+  seatsLeft: number;
   seats: number;
   onChangeSeats: (seats: number) => void;
   sending: boolean;
@@ -128,11 +169,22 @@ function RequestForm({
         <RideRoute ride={ride} />
       </View>
 
+      <View style={[styles.card, { borderColor: theme.border }]}>
+        <ThemedText type="smallBold">Day</ThemedText>
+        {days.length === 0 ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            No days to book in the next week
+          </ThemedText>
+        ) : (
+          <TravelDatePicker days={days} value={travelDate} onChange={onChangeDate} />
+        )}
+      </View>
+
       <View style={[styles.card, styles.seatsRow, { borderColor: theme.border }]}>
         <View style={styles.grow}>
           <ThemedText type="smallBold">Seats</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {formatSeatsLeft(ride.seatsAvailable)} on this ride
+            {formatSeatsLeft(seatsLeft)} that day
           </ThemedText>
         </View>
         <StepButton
@@ -145,7 +197,7 @@ function RequestForm({
         <StepButton
           icon="add"
           label="One seat more"
-          disabled={sending || seats >= ride.seatsAvailable}
+          disabled={sending || seats >= seatsLeft}
           onPress={() => onChangeSeats(seats + 1)}
         />
       </View>
@@ -175,7 +227,7 @@ function RequestForm({
         <Button
           label={`Send request · ${formatCost(total)}`}
           loading={sending}
-          disabled={ride.seatsAvailable < 1}
+          disabled={!travelDate || seatsLeft < 1}
           onPress={onSend}
         />
         <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
@@ -213,11 +265,13 @@ function StepButton({
 function SentState({
   ride,
   seats,
+  travelDate,
   onViewBookings,
   onBack,
 }: {
   ride: RideMatch;
   seats: number;
+  travelDate: string;
   onViewBookings: () => void;
   onBack: () => void;
 }) {
@@ -225,7 +279,7 @@ function SentState({
   const firstName = ride.driver.name.split(' ')[0];
 
   return (
-    <Screen underTabBar>
+    <Screen>
       <View style={styles.sentWrap}>
         <View style={[styles.sentIcon, { backgroundColor: theme.primarySoft }]}>
           <SymbolView name={Icons.send} size={28} tintColor={theme.primary} />
@@ -233,8 +287,7 @@ function SentState({
         <ThemedText style={styles.sentTitle}>Request sent to {firstName}</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.center}>
           {seatWord(seats)} · {formatCost(ride.costContribution * seats)} ·{' '}
-          {formatRideSchedule(ride.daysOfWeek, ride.departureTime)}. You&apos;ll see the reply in My
-          bookings.
+          {formatTravelDate(travelDate)}. You&apos;ll see the reply in My bookings.
         </ThemedText>
       </View>
       <View style={styles.footer}>

@@ -12,7 +12,7 @@ import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { BookingListItem } from '@/types/booking.types';
-import { formatCost } from '@/utils/formatters';
+import { formatCost, formatTravelDate } from '@/utils/formatters';
 
 export type RequestAction = 'accept' | 'decline' | 'complete';
 
@@ -22,7 +22,6 @@ interface RequestCardProps {
   busy: RequestAction | null;
   onAction: (action: RequestAction) => void;
   onReport: () => void;
-  onVerifyPickup: () => void;
   onSos: () => void;
   onOpenProfile: () => void;
 }
@@ -33,14 +32,11 @@ export function RequestCard({
   busy,
   onAction,
   onReport,
-  onVerifyPickup,
   onSos,
   onOpenProfile,
 }: RequestCardProps) {
   const theme = useTheme();
   const seats = request.seatsRequested;
-  const seatsLeft = request.ride.seatsAvailable;
-  const cantFit = seats > seatsLeft;
 
   return (
     <View style={[styles.card, { borderColor: theme.border }]}>
@@ -56,6 +52,10 @@ export function RequestCard({
         <TrustScoreBadge score={request.otherParty.trustScore} />
       </Pressable>
 
+      {request.travelDate && (
+        <ThemedText type="smallBold">{formatTravelDate(request.travelDate)}</ThemedText>
+      )}
+
       <View style={styles.detailsRow}>
         <ThemedText type="small" themeColor="textSecondary" style={styles.grow}>
           <ThemedText type="smallBold">{`${seats} seat${seats === 1 ? '' : 's'}`}</ThemedText>
@@ -66,11 +66,6 @@ export function RequestCard({
 
       {request.status === BookingStatus.REQUESTED && (
         <>
-          {cantFit && (
-            <ThemedText type="small" themeColor="textSecondary">
-              Only {seatsLeft} seat{seatsLeft === 1 ? '' : 's'} left — can&apos;t fit {seats}.
-            </ThemedText>
-          )}
           {/* both buttons lock while either one is waiting, so a double-tap can't send twice */}
           <View style={styles.actions}>
             <View style={styles.grow}>
@@ -86,7 +81,7 @@ export function RequestCard({
               <Button
                 label="Accept"
                 loading={busy === 'accept'}
-                disabled={busy !== null || cantFit}
+                disabled={busy !== null}
                 onPress={() => onAction('accept')}
               />
             </View>
@@ -98,24 +93,22 @@ export function RequestCard({
         <PickedUpRow at={request.pickupVerifiedAt} />
       )}
 
-      {/* the ride can only be completed after the PIN check at pickup */}
+      {/* the PIN is checked on the trip screen once the trip starts; Complete only after that */}
       {request.status === BookingStatus.ACCEPTED && (
         <View style={styles.actions}>
           <View style={styles.grow}>
             <Button label="Report" variant="soft" disabled={busy !== null} onPress={onReport} />
           </View>
-          <View style={styles.grow}>
-            {request.pickupVerifiedAt ? (
+          {request.pickupVerifiedAt && (
+            <View style={styles.grow}>
               <Button
-                label="Mark completed"
+                label="Complete"
                 loading={busy === 'complete'}
                 disabled={busy !== null}
                 onPress={() => onAction('complete')}
               />
-            ) : (
-              <Button label="Enter pickup PIN" disabled={busy !== null} onPress={onVerifyPickup} />
-            )}
-          </View>
+            </View>
+          )}
         </View>
       )}
 
