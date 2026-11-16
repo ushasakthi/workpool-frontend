@@ -95,7 +95,8 @@ function ProfileHeader({ profile }: { profile: PublicUserProfile }) {
 // the score plus what it's built from, so it's never one opaque number
 function TrustCard({ profile }: { profile: PublicUserProfile }) {
   const theme = useTheme();
-  const { score, completedRides, ratingCount, averageRating } = profile.trustScore;
+  const { score, completedRides, ratingCount, averageRating, cancellationCount, upheldComplaints } =
+    profile.trustScore;
 
   return (
     <View style={[styles.card, { borderColor: theme.border }]}>
@@ -111,12 +112,16 @@ function TrustCard({ profile }: { profile: PublicUserProfile }) {
             Trust Score{score === null ? '' : ` · ${trustLabel(score)}`}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {score === null ? 'Not calculated yet' : `${score} out of 100, built from:`}
+            {score === null ? 'Not calculated yet' : `${score} out of 100`}
           </ThemedText>
         </View>
       </View>
 
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+        BUILT FROM
+      </ThemedText>
 
       <TrustRow
         icon="idCard"
@@ -149,6 +154,18 @@ function TrustCard({ profile }: { profile: PublicUserProfile }) {
             {ratingCount === 0 ? '—' : `${averageRating.toFixed(1)} / 5`}
           </ThemedText>
         }
+      />
+      <TrustRow
+        icon="xmarkCircle"
+        title="Cancellations"
+        subtitle="After being accepted"
+        value={<ThemedText type="smallBold">{cancellationCount}</ThemedText>}
+      />
+      <TrustRow
+        icon="flag"
+        title="Upheld reports"
+        subtitle="Reviewed by WorkPool"
+        value={<ThemedText type="smallBold">{upheldComplaints}</ThemedText>}
       />
     </View>
   );
@@ -323,6 +340,10 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    letterSpacing: 0.7,
   },
   trustRow: {
     flexDirection: 'row',

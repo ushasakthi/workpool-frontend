@@ -44,6 +44,9 @@ export interface TrustSummary {
   completedRides: number;
   ratingCount: number;
   averageRating: number;
+  cancellationCount: number;
+  // only reports an admin upheld, so a new report can't be traced back
+  upheldComplaints: number;
 }
 
 // another user's profile, from GET /users/:id/profile
