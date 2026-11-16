@@ -19,7 +19,7 @@ import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { getErrorMessage } from '@/utils/errors';
+import { errorStatus, getErrorMessage } from '@/utils/errors';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -47,7 +47,7 @@ function normalizeLinkedinUrl(value: string): string {
 export default function VerifyScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const logout = useAuthStore((state) => state.logout);
 
   const [nicNumber, setNicNumber] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
@@ -58,6 +58,7 @@ export default function VerifyScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nicWarning, setNicWarning] = useState<string | null>(null);
 
   const normalizedLinkedinUrl = normalizeLinkedinUrl(linkedinUrl);
   const nicValid = NIC_REGEX.test(nicNumber.trim());
@@ -90,6 +91,7 @@ export default function VerifyScreen() {
     }
 
     setFile({ uri: candidate.uri, name: candidate.name, mimeType: candidate.mimeType });
+    setNicWarning(null);
   }
 
   async function handlePickFromPhotos() {
@@ -140,7 +142,7 @@ export default function VerifyScreen() {
     );
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(submitAnyway: boolean) {
     if (!canSubmit) {
       setSubmitAttempted(true);
       return;
@@ -148,6 +150,7 @@ export default function VerifyScreen() {
     if (!file) return;
 
     setError(null);
+    setNicWarning(null);
     setIsSubmitting(true);
     setUploadProgress(0);
     try {
@@ -155,13 +158,19 @@ export default function VerifyScreen() {
         nicNumber: nicNumber.trim(),
         linkedinUrl: normalizedLinkedinUrl,
         file,
+        submitAnyway,
         onUploadProgress: setUploadProgress,
       });
       // log out so the user has to log in again to check status
-      await clearSession();
+      await logout();
       router.replace('/login?justSubmitted=1');
     } catch (err) {
-      setError(getErrorMessage(err));
+      // 422 = NIC number not found on the photo, the user can retry or submit anyway
+      if (errorStatus(err) === 422) {
+        setNicWarning(getErrorMessage(err));
+      } else {
+        setError(getErrorMessage(err));
+      }
     } finally {
       setIsSubmitting(false);
       setUploadProgress(undefined);
@@ -180,6 +189,24 @@ export default function VerifyScreen() {
       </View>
 
       {error && <Banner message={error} />}
+
+      {nicWarning && (
+        <View style={styles.warningGroup}>
+          <Banner message={nicWarning} />
+          <Button
+            label="Choose another photo"
+            variant="soft"
+            onPress={() => setIsPickerMenuOpen(true)}
+            disabled={isSubmitting}
+          />
+          <Button
+            label="Submit anyway"
+            variant="text"
+            onPress={() => handleSubmit(true)}
+            disabled={isSubmitting}
+          />
+        </View>
+      )}
 
       <View style={styles.fieldGroup}>
         <View style={styles.labelRow}>
@@ -250,7 +277,7 @@ export default function VerifyScreen() {
       />
 
       <View style={styles.submitGroup}>
-        <Button label="Submit for review" onPress={handleSubmit} loading={isSubmitting} />
+        <Button label="Submit for review" onPress={() => handleSubmit(false)} loading={isSubmitting} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.footerHint}>
           {canSubmit
             ? "You'll be notified once your account is verified."
@@ -272,6 +299,9 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   fieldGroup: {
+    gap: Spacing.two,
+  },
+  warningGroup: {
     gap: Spacing.two,
   },
   labelRow: {

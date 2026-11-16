@@ -31,6 +31,7 @@ export interface SubmitVerificationInput {
   nicNumber: string;
   linkedinUrl: string;
   file: NicDocumentFile;
+  submitAnyway?: boolean;
   onUploadProgress?: (percent: number) => void;
 }
 
@@ -122,11 +123,16 @@ export async function submitVerification(input: SubmitVerificationInput): Promis
     'nicDocument',
     { uri: input.file.uri, name: input.file.name, type: input.file.mimeType } as unknown as Blob,
   );
+  if (input.submitAnyway) {
+    formData.append('submitAnyway', 'true');
+  }
 
   const response = await apiClient.patch<SuccessResponse<MessageResponse>>(
     '/users/me/verification',
     formData,
     {
+      // the server reads the NIC photo (OCR) before replying, which can take a while
+      timeout: 60_000,
       onUploadProgress: (event) => {
         if (!input.onUploadProgress || !event.total) return;
         input.onUploadProgress(Math.round((event.loaded / event.total) * 100));

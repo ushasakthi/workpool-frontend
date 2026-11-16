@@ -1,3 +1,4 @@
+import { NicCheck } from '@/constants/nic-check.enum';
 import { PreferredRole } from '@/constants/preferred-role.enum';
 import { UserRole } from '@/constants/user-role.enum';
 import { VerificationStatus } from '@/constants/verification-status.enum';
@@ -9,6 +10,7 @@ export interface VerificationInfo {
   reviewedAt?: string;
   rejectionReason?: string;
   submittedAt?: string;
+  nicCheck?: NicCheck;
 }
 
 export interface GeoPoint {

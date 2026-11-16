@@ -6,12 +6,13 @@ import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, 
 
 import { getVerificationSubmission, reviewVerification } from '@/api/admin.api';
 import { apiClient, apiUrl, AUTH_TOKEN_STORAGE_KEY, readSecureItem } from '@/api/client';
-import { StatusBadge, statusBadgeTone } from '@/components/admin/status-badge';
+import { type BadgeTone, StatusBadge, statusBadgeTone } from '@/components/admin/status-badge';
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/constants/icons';
+import { NicCheck } from '@/constants/nic-check.enum';
 import { Spacing } from '@/constants/theme';
 import { VerificationStatus } from '@/constants/verification-status.enum';
 import { useTheme } from '@/hooks/use-theme';
@@ -19,6 +20,12 @@ import type { VerificationSubmission } from '@/types/user.types';
 import { getErrorMessage } from '@/utils/errors';
 import { formatDate } from '@/utils/formatters';
 import { getOverallVerificationStatus } from '@/utils/verification';
+
+const NIC_CHECK_BADGES: Record<NicCheck, { label: string; tone: BadgeTone }> = {
+  [NicCheck.MATCHED]: { label: 'Number found', tone: 'verified' },
+  [NicCheck.NOT_DETECTED]: { label: 'Number not found', tone: 'rejected' },
+  [NicCheck.NOT_CHECKED]: { label: 'Not checked', tone: 'neutral' },
+};
 
 interface ImageSource {
   uri: string;
@@ -116,6 +123,7 @@ export default function VerificationDetailScreen() {
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
   const isPdf = submission.nicDocumentUrl?.toLowerCase().endsWith('.pdf') ?? false;
   const isDecided = status !== VerificationStatus.PENDING;
+  const nicCheck = submission.verification.nicCheck;
 
   return (
     <View style={styles.flex}>
@@ -175,6 +183,16 @@ export default function VerificationDetailScreen() {
               </ThemedText>
               <InfoRow label="Full name" value={submission.name} />
               <InfoRow label="Work email" value={submission.email} />
+              <InfoRow label="NIC number" value={submission.nicNumber ?? '—'} />
+              {nicCheck && (
+                <View style={styles.infoRow}>
+                  <ThemedText themeColor="textSecondary">NIC photo check</ThemedText>
+                  <StatusBadge
+                    label={NIC_CHECK_BADGES[nicCheck].label}
+                    tone={NIC_CHECK_BADGES[nicCheck].tone}
+                  />
+                </View>
+              )}
               <InfoRow
                 label="Submitted"
                 value={
