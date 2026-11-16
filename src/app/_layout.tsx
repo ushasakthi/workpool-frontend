@@ -5,12 +5,14 @@ import { Platform, useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useProtectedRoute } from '@/hooks/use-protected-route';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useProtectedRoute();
+  usePushNotifications();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 
 export function OnboardingHeader() {
   const theme = useTheme();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const logout = useAuthStore((state) => state.logout);
 
   return (
     <View style={styles.row}>
@@ -19,7 +19,7 @@ export function OnboardingHeader() {
         </View>
         <ThemedText type="smallBold">WorkPool</ThemedText>
       </View>
-      <Pressable accessibilityRole="button" onPress={() => void clearSession()} hitSlop={8}>
+      <Pressable accessibilityRole="button" onPress={() => void logout()} hitSlop={8}>
         <ThemedText type="small" themeColor="textSecondary">
           Log out
         </ThemedText>

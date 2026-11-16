@@ -12,7 +12,7 @@ export function AdminHeader() {
   const theme = useTheme();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const logout = useAuthStore((state) => state.logout);
   const [menuOpen, setMenuOpen] = useState(false);
 
   function goTo(path: '/account' | '/settings') {
@@ -65,7 +65,7 @@ export function AdminHeader() {
             style={styles.menuItem}
             onPress={() => {
               setMenuOpen(false);
-              void clearSession();
+              void logout();
             }}>
             <ThemedText themeColor="error">Sign out</ThemedText>
           </Pressable>

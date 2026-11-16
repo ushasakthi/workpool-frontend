@@ -9,6 +9,7 @@ import {
   setTokenRefreshedHandler,
   writeSecureItem,
 } from '@/api/client';
+import { logout as logoutRequest } from '@/api/auth.api';
 import {
   getMe,
   updateEmergencyContact as updateEmergencyContactRequest,
@@ -19,6 +20,12 @@ import {
   type UpdateProfileInput,
   type UpdateTravelProfileInput,
 } from '@/api/users.api';
+import { useAdminStore } from '@/stores/useAdminStore';
+import { useBookingStore } from '@/stores/useBookingStore';
+import { useReviewStore } from '@/stores/useReviewStore';
+import { useRideStore } from '@/stores/useRideStore';
+import { useTripStore } from '@/stores/useTripStore';
+import { useVehicleStore } from '@/stores/useVehicleStore';
 import type { AuthResult, EmergencyContact, UserProfile } from '@/types/user.types';
 
 type AuthStatus = 'idle' | 'hydrating' | 'authenticated' | 'unauthenticated';
@@ -32,6 +39,8 @@ interface AuthState {
   hydrate: () => Promise<void>;
   setSession: (result: AuthResult) => Promise<void>;
   clearSession: () => Promise<void>;
+  // user tapped Log out: tell the server, then clear the phone
+  logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
   updateProfile: (input: UpdateProfileInput) => Promise<void>;
   updateEmergencyContact: (input: EmergencyContact) => Promise<void>;
@@ -39,7 +48,7 @@ interface AuthState {
   uploadProfilePhoto: (file: ProfilePhotoFile) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'idle',
   token: null,
   refreshToken: null,
@@ -90,12 +99,34 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
 
+  logout: async () => {
+    try {
+      await logoutRequest();
+    } catch {
+      // offline or already expired: still log out on this phone
+    }
+    await get().clearSession();
+  },
+
   clearSession: async () => {
     await Promise.all([
       deleteSecureItem(AUTH_TOKEN_STORAGE_KEY),
       deleteSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
     ]);
     set({ status: 'unauthenticated', token: null, refreshToken: null, user: null, isAuthenticated: false });
+    // the next person to log in on this phone must not see the last user's data
+    useBookingStore.setState({ myBookings: null, requests: null, savings: null });
+    useRideStore.setState({ rides: null, searchResults: null, rideDetail: null });
+    useVehicleStore.setState({ vehicles: null });
+    useReviewStore.setState({ profile: null, reviews: null });
+    useTripStore.setState({ current: null, checked: false, updatedAt: null, today: null });
+    useAdminStore.setState({
+      stats: null,
+      statsLoadedAt: null,
+      openReports: null,
+      users: null,
+      actionLog: null,
+    });
   },
 
   refreshMe: async () => {

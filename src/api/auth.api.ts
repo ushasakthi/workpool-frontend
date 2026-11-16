@@ -41,6 +41,11 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   return response.data.data;
 }
 
+// the server revokes the refresh token and stops push notifications to this phone
+export async function logout(): Promise<void> {
+  await apiClient.post('/auth/logout');
+}
+
 export async function forgotPassword(email: string): Promise<string> {
   const response = await apiClient.post<SuccessResponse<MessageResponse>>('/auth/forgot-password', {
     email,

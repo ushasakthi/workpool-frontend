@@ -108,7 +108,7 @@ export default function ProfileScreen() {
 
 function LogoutButton() {
   const theme = useTheme();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const logout = useAuthStore((state) => state.logout);
   const [confirming, setConfirming] = useState(false);
 
   if (confirming) {
@@ -128,7 +128,7 @@ function LogoutButton() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={() => void clearSession()}
+            onPress={() => void logout()}
             hitSlop={8}>
             <ThemedText type="smallBold" themeColor="error">
               Log out
