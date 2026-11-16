@@ -68,7 +68,7 @@ export default function SosScreen() {
           tone="soft"
           icon="messageAlert"
           title={`Alert ${contact.name.split(' ')[0]}`}
-          subtitle="Opens Messages with your ride details"
+          subtitle={`Texts ${contact.phone} with your ride details`}
           loading={sending}
           onPress={() => void alertContact()}
         />

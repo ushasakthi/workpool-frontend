@@ -101,7 +101,7 @@ export default function EmergencyContactScreen() {
       <View style={styles.spacer} />
 
       <Button
-        label={saving ? 'Saving…' : 'Save'}
+        label={saving ? 'Saving…' : isUnchanged ? 'Saved' : 'Save'}
         loading={saving}
         disabled={isEmpty || isUnchanged}
         onPress={() => void save()}
