@@ -1,59 +1,25 @@
-// OpenStreetMap Nominatim (not our backend), so plain fetch.
-// Returns null if it fails.
-const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
-const REQUEST_TIMEOUT_MS = 6000;
+import { apiClient } from './client';
 
-interface NominatimAddress {
-  neighbourhood?: string;
-  suburb?: string;
-  quarter?: string;
-  city_district?: string;
-  city?: string;
-  town?: string;
-  village?: string;
-  municipality?: string;
-  state?: string;
+interface SuccessResponse<T> {
+  success: true;
+  statusCode: number;
+  data: T;
 }
 
-interface NominatimReverseResponse {
-  address?: NominatimAddress;
-}
-
-// e.g. "Near Mission District, San Francisco"
+// Asks our backend, which asks OpenStreetMap. OpenStreetMap refuses requests
+// straight from the phone, so the app never calls it directly.
+// e.g. "Near Bambalapitiya, Colombo"; null if it fails.
 export async function reverseGeocodeApproxLabel(
   lat: number,
   lng: number,
 ): Promise<string | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
   try {
-    const url = `${NOMINATIM_REVERSE_URL}?format=json&zoom=14&lat=${lat}&lon=${lng}`;
-    const response = await fetch(url, {
-      headers: { Accept: 'application/json' },
-      signal: controller.signal,
-    });
-    if (!response.ok) return null;
-
-    const data = (await response.json()) as NominatimReverseResponse;
-    const address = data.address;
-    if (!address) return null;
-
-    const area =
-      address.neighbourhood ??
-      address.suburb ??
-      address.quarter ??
-      address.city_district;
-    const place =
-      address.city ?? address.town ?? address.village ?? address.municipality ?? address.state;
-
-    if (area && place) return `Near ${area}, ${place}`;
-    if (place) return `Near ${place}`;
-    if (area) return `Near ${area}`;
-    return null;
+    const response = await apiClient.get<SuccessResponse<{ label: string | null }>>(
+      '/geocode/reverse',
+      { params: { lat, lng } },
+    );
+    return response.data.data.label;
   } catch {
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }
