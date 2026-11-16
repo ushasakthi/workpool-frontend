@@ -7,7 +7,6 @@ import { ThemedText } from '@/components/themed-text';
 import { TravelSummaryCard } from '@/components/travel/travel-summary-card';
 import { Screen } from '@/components/ui/screen';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StateMessage } from '@/components/ui/state-message';
 import { VehicleSummaryCard } from '@/components/vehicle/vehicle-summary-card';
 import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
@@ -50,22 +49,7 @@ export default function CommuteScreen() {
     </View>
   );
 
-  if (loadError) {
-    return (
-      <Screen underTabBar>
-        {heading}
-        <StateMessage
-          icon="wifiSlash"
-          tone="neutral"
-          title="Couldn't load your commute"
-          message="Check your connection and try again."
-          action={{ label: 'Try again', onPress: () => void load() }}
-        />
-      </Screen>
-    );
-  }
-
-  if (!user || (canOffer && vehicles === null)) {
+  if (!user || (canOffer && vehicles === null && !loadError)) {
     return (
       <Screen underTabBar>
         {heading}
@@ -83,13 +67,16 @@ export default function CommuteScreen() {
         onEdit={() => router.push('/commute/travel-profile')}
       />
 
-      {canOffer && vehicles ? (
+      {canOffer ? (
         <VehicleSummaryCard
-          vehicles={vehicles}
+          vehicles={vehicles ?? []}
+          error={loadError}
           onAdd={() => router.push({ pathname: '/commute/vehicle', params: { mode: 'add' } })}
           onOpen={(vehicle) =>
             router.push({ pathname: '/commute/vehicle', params: { vehicleId: vehicle.id } })
           }
+          onSeeAll={() => router.push('/commute/vehicle')}
+          onRetry={() => void load()}
         />
       ) : (
         <OfferRidesHint onPress={() => router.push('/profile')} />

@@ -11,22 +11,37 @@ import { useApiImageSource } from '@/hooks/use-api-image';
 import { useTheme } from '@/hooks/use-theme';
 import type { Vehicle } from '@/types/vehicle.types';
 
+const MAX_SHOWN = 3;
+
 interface VehicleSummaryCardProps {
   vehicles: Vehicle[];
+  error: string | null;
   onAdd: () => void;
   onOpen: (vehicle: Vehicle) => void;
+  onSeeAll: () => void;
+  onRetry: () => void;
 }
 
-export function VehicleSummaryCard({ vehicles, onAdd, onOpen }: VehicleSummaryCardProps) {
+export function VehicleSummaryCard({
+  vehicles,
+  error,
+  onAdd,
+  onOpen,
+  onSeeAll,
+  onRetry,
+}: VehicleSummaryCardProps) {
   const theme = useTheme();
   const allPaused = vehicles.length > 0 && vehicles.every((vehicle) => !vehicle.isActive);
+  const shown = vehicles.slice(0, MAX_SHOWN);
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
-          VEHICLES
-        </ThemedText>
+        <Pressable accessibilityRole="button" onPress={onSeeAll} hitSlop={8}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionLabel}>
+            VEHICLES
+          </ThemedText>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add vehicle"
@@ -36,7 +51,7 @@ export function VehicleSummaryCard({ vehicles, onAdd, onOpen }: VehicleSummaryCa
         </Pressable>
       </View>
 
-      {allPaused && (
+      {!error && allPaused && (
         <View style={[styles.warning, { backgroundColor: theme.warningSoft }]}>
           <SymbolView name={Icons.warningTriangle} size={18} tintColor={theme.warning} />
           <ThemedText type="smallBold" themeColor="warning" style={styles.grow}>
@@ -45,7 +60,18 @@ export function VehicleSummaryCard({ vehicles, onAdd, onOpen }: VehicleSummaryCa
         </View>
       )}
 
-      {vehicles.length === 0 ? (
+      {error ? (
+        <View style={[styles.card, styles.empty, { backgroundColor: theme.backgroundElement }]}>
+          <SymbolView name={Icons.wifiSlash} size={26} tintColor={theme.textSecondary} />
+          <ThemedText type="smallBold" style={styles.emptyTitle}>
+            Couldn&apos;t load vehicles
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {error}
+          </ThemedText>
+          <Button label="Try again" variant="soft" onPress={onRetry} />
+        </View>
+      ) : vehicles.length === 0 ? (
         <View style={[styles.card, styles.empty, { backgroundColor: theme.backgroundElement }]}>
           <SymbolView name={Icons.car} size={26} tintColor={theme.textSecondary} />
           <ThemedText type="smallBold" style={styles.emptyTitle}>
@@ -58,7 +84,7 @@ export function VehicleSummaryCard({ vehicles, onAdd, onOpen }: VehicleSummaryCa
         </View>
       ) : (
         <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
-          {vehicles.map((vehicle, index) => (
+          {shown.map((vehicle, index) => (
             <VehicleRow
               key={vehicle.id}
               vehicle={vehicle}
@@ -66,6 +92,16 @@ export function VehicleSummaryCard({ vehicles, onAdd, onOpen }: VehicleSummaryCa
               onPress={() => onOpen(vehicle)}
             />
           ))}
+          {vehicles.length > MAX_SHOWN && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onSeeAll}
+              style={[styles.seeAll, { borderTopColor: theme.border }]}>
+              <ThemedText type="smallBold" themeColor="primary">
+                See all ({vehicles.length})
+              </ThemedText>
+            </Pressable>
+          )}
         </View>
       )}
     </View>
@@ -160,6 +196,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  seeAll: {
+    alignItems: 'center',
+    borderTopWidth: 1,
     paddingVertical: 12,
   },
   thumb: {
