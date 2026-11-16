@@ -10,6 +10,8 @@ export interface Ride {
   vehicleId: string;
   origin: GeoPoint;
   destination: GeoPoint;
+  // places the driver passes through, in order
+  via: GeoPoint[];
   // ISO date of the next departure
   departureTime: string;
   daysOfWeek: Weekday[];

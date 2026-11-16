@@ -9,6 +9,8 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { GeoPoint } from '@/types/user.types';
 
+import { labelledPinsScript } from './map-pins-script';
+
 // Web version: webview doesn't work on web, so the map runs in an iframe
 const DEFAULT_CENTER = { lat: 6.9271, lng: 79.8612 };
 
@@ -16,11 +18,18 @@ interface OsmMapPickerProps {
   visible: boolean;
   title: string;
   initialPoint?: GeoPoint;
+  // shown for reference, can't be dragged
+  labelledPins?: GeoPoint[];
   onCancel: () => void;
   onConfirm: (point: GeoPoint) => void;
 }
 
-function buildLeafletHtml(center: { lat: number; lng: number }, hasInitial: boolean): string {
+function buildLeafletHtml(
+  center: { lat: number; lng: number },
+  hasInitial: boolean,
+  pins: GeoPoint[],
+  pinColor: string,
+): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -46,12 +55,20 @@ function buildLeafletHtml(center: { lat: number; lng: number }, hasInitial: bool
     }
     map.on('click', function (e) { place(e.latlng); });
     if (marker) marker.on('dragend', function () { var p = marker.getLatLng(); post(p.lat, p.lng); });
+    ${labelledPinsScript(pins, pinColor, hasInitial)}
   </script>
 </body>
 </html>`;
 }
 
-export function OsmMapPicker({ visible, title, initialPoint, onCancel, onConfirm }: OsmMapPickerProps) {
+export function OsmMapPicker({
+  visible,
+  title,
+  initialPoint,
+  labelledPins = [],
+  onCancel,
+  onConfirm,
+}: OsmMapPickerProps) {
   const theme = useTheme();
   const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(
     initialPoint ? { lat: initialPoint.lat, lng: initialPoint.lng } : null,
@@ -59,8 +76,8 @@ export function OsmMapPicker({ visible, title, initialPoint, onCancel, onConfirm
   const [isResolving, setIsResolving] = useState(false);
 
   const html = useMemo(
-    () => buildLeafletHtml(initialPoint ?? DEFAULT_CENTER, Boolean(initialPoint)),
-    [initialPoint],
+    () => buildLeafletHtml(initialPoint ?? DEFAULT_CENTER, Boolean(initialPoint), labelledPins, theme.primary),
+    [initialPoint, labelledPins, theme.primary],
   );
 
   useEffect(() => {

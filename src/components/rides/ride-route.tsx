@@ -9,7 +9,7 @@ import { formatHhMmForDisplay } from '@/utils/time';
 
 interface RideRouteProps {
   // only the route fields, so a booking's ride summary works too
-  ride: Pick<Ride, 'origin' | 'destination' | 'departureTime'>;
+  ride: Pick<Ride, 'origin' | 'destination' | 'departureTime'> & Partial<Pick<Ride, 'via'>>;
   // small line under each stop, e.g. "350 m walk"
   pickupNote?: string;
   dropoffNote?: string;
@@ -33,6 +33,11 @@ export function RideRoute({ ride, pickupNote, dropoffNote }: RideRouteProps) {
             <ThemedText type="smallBold" numberOfLines={1}>
               {ride.origin.label ?? 'Pickup'}
             </ThemedText>
+            {ride.via && ride.via.length > 0 && (
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                via {ride.via.map((place) => place.label ?? 'a stop').join(' · ')}
+              </ThemedText>
+            )}
             {pickupNote && (
               <ThemedText type="small" themeColor="textSecondary">
                 {pickupNote}

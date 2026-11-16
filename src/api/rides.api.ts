@@ -14,6 +14,8 @@ export interface CreateRideInput {
   vehicleId: string;
   origin: GeoPoint;
   destination: GeoPoint;
+  // up to 3, in driving order
+  via: GeoPoint[];
   // ISO date, must be in the future
   departureTime: string;
   daysOfWeek: Weekday[];

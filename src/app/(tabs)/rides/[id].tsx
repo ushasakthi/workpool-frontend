@@ -142,7 +142,7 @@ function RideDetail({
           pickupNote={
             ride.pickupDistanceKm === null
               ? 'Pickup'
-              : `Pickup · ${formatDistance(ride.pickupDistanceKm)} from home`
+              : `Passes ${formatDistance(ride.pickupDistanceKm)} from your home`
           }
           dropoffNote="Drop-off"
         />

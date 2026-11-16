@@ -48,7 +48,7 @@ export function RideResultCard({ ride, onPress }: RideResultCardProps) {
         pickupNote={
           ride.pickupDistanceKm === null
             ? undefined
-            : `${formatDistance(ride.pickupDistanceKm)} walk`
+            : `Passes ${formatDistance(ride.pickupDistanceKm)} from your home`
         }
       />
 

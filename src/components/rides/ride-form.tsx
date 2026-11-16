@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { CreateRideInput } from "@/api/rides.api";
 import { ThemedText } from "@/components/themed-text";
 import { DaySelector } from "@/components/travel/day-selector";
+import { PassingThroughField } from "@/components/rides/passing-through-field";
 import { MapLocationField } from "@/components/travel/map-location-field";
 import { TimeField } from "@/components/travel/time-field";
 import { Banner } from "@/components/ui/banner";
@@ -13,6 +14,7 @@ import { SeatsField } from "@/components/vehicle/seats-field";
 import { Spacing } from "@/constants/theme";
 import { Weekday } from "@/constants/weekday.enum";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useRideStore } from "@/stores/useRideStore";
 import type { Ride } from "@/types/ride.types";
 import type { GeoPoint } from "@/types/user.types";
@@ -33,11 +35,22 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
   const theme = useTheme();
   const postRide = useRideStore((state) => state.postRide);
   const saveRide = useRideStore((state) => state.saveRide);
+  const travelProfile = useAuthStore((state) => state.user?.travelProfile);
+
+  // the driver's own Home and Work, shown on the map to help pick the route
+  const homeAndWork: GeoPoint[] = [];
+  if (travelProfile?.homeLocation) {
+    homeAndWork.push({ ...travelProfile.homeLocation, label: "Home" });
+  }
+  if (travelProfile?.workLocation) {
+    homeAndWork.push({ ...travelProfile.workLocation, label: "Work" });
+  }
 
   const [origin, setOrigin] = useState<GeoPoint | undefined>(ride?.origin);
   const [destination, setDestination] = useState<GeoPoint | undefined>(
     ride?.destination,
   );
+  const [via, setVia] = useState<GeoPoint[]>(ride?.via ?? []);
   const [time, setTime] = useState<string | undefined>(
     ride ? timeOfDayFromISO(ride.departureTime) : undefined,
   );
@@ -93,6 +106,7 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
       vehicleId,
       origin,
       destination,
+      via,
       departureTime: nextOccurrence(time, days).toISOString(),
       daysOfWeek: days,
       seatsAvailable: seats,
@@ -129,13 +143,16 @@ export function RideForm({ vehicles, ride, onDone }: RideFormProps) {
         kind="origin"
         point={origin}
         placeholder="Set pickup point"
+        labelledPins={homeAndWork}
         onChange={setOrigin}
       />
+      <PassingThroughField value={via} onChange={setVia} labelledPins={homeAndWork} />
       <MapLocationField
         label="DESTINATION"
         kind="destination"
         point={destination}
         placeholder="Set drop-off point"
+        labelledPins={homeAndWork}
         onChange={setDestination}
       />
 

@@ -18,6 +18,8 @@ interface MapLocationFieldProps {
   onChange: (point: GeoPoint) => void;
   // shown before a point is picked
   placeholder?: string;
+  // extra fixed pins on the map, e.g. the user's Home and Work
+  labelledPins?: GeoPoint[];
 }
 
 // Green marker for the "start" end (home / origin), amber for the "destination" end.
@@ -42,6 +44,7 @@ export function MapLocationField({
   point,
   onChange,
   placeholder,
+  labelledPins,
 }: MapLocationFieldProps) {
   const theme = useTheme();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -90,6 +93,7 @@ export function MapLocationField({
         visible={isPickerOpen}
         title={`${label[0]}${label.slice(1).toLowerCase()}`}
         initialPoint={point}
+        labelledPins={labelledPins}
         onCancel={() => setIsPickerOpen(false)}
         onConfirm={(next) => {
           setIsPickerOpen(false);
