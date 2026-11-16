@@ -29,7 +29,7 @@ export function Screen({ children, header, underTabBar = false, refreshing = fal
 
   return (
     <ThemedView style={styles.flex}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
           {header && (
             <View style={[styles.header, { paddingTop: HEADER_PADDING_TOP + topInset }]}>{header}</View>
