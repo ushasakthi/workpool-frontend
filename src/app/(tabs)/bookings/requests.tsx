@@ -136,9 +136,6 @@ export default function RideRequestsScreen() {
                   onReport={() =>
                     router.push({ pathname: '/bookings/report', params: { bookingId: request.id } })
                   }
-                  onSos={() =>
-                    router.push({ pathname: '/bookings/sos', params: { bookingId: request.id } })
-                  }
                   onOpenProfile={() =>
                     router.push({
                       pathname: '/profile/[userId]',

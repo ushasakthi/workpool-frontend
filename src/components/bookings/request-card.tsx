@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/admin/avatar';
 import { PickedUpRow } from '@/components/bookings/pickup-status';
-import { SosButton } from '@/components/bookings/sos-button';
 import { ThemedText } from '@/components/themed-text';
 import { TrustScoreBadge } from '@/components/trust/trust-score-badge';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,6 @@ interface RequestCardProps {
   busy: RequestAction | null;
   onAction: (action: RequestAction) => void;
   onReport: () => void;
-  onSos: () => void;
   onOpenProfile: () => void;
 }
 
@@ -32,7 +30,6 @@ export function RequestCard({
   busy,
   onAction,
   onReport,
-  onSos,
   onOpenProfile,
 }: RequestCardProps) {
   const theme = useTheme();
@@ -56,13 +53,10 @@ export function RequestCard({
         <ThemedText type="smallBold">{formatTravelDate(request.travelDate)}</ThemedText>
       )}
 
-      <View style={styles.detailsRow}>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.grow}>
-          <ThemedText type="smallBold">{`${seats} seat${seats === 1 ? '' : 's'}`}</ThemedText>
-          {` · ${formatCost(request.ride.costContribution * seats)} · Pickup ${request.ride.origin.label ?? ''}`}
-        </ThemedText>
-        {request.status === BookingStatus.ACCEPTED && <SosButton onPress={onSos} />}
-      </View>
+      <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="smallBold">{`${seats} seat${seats === 1 ? '' : 's'}`}</ThemedText>
+        {` · ${formatCost(request.ride.costContribution * seats)} · Pickup ${request.ride.origin.label ?? ''}`}
+      </ThemedText>
 
       {request.status === BookingStatus.REQUESTED && (
         <>
@@ -142,11 +136,6 @@ const styles = StyleSheet.create({
   },
   grow: {
     flex: 1,
-  },
-  detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
   },
   actions: {
     flexDirection: 'row',

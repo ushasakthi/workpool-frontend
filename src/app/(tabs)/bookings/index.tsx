@@ -112,8 +112,7 @@ export default function MyBookingsScreen() {
             <BookingCard
               key={booking.id}
               booking={booking}
-              onOpenProfile={() => openProfile(booking.otherParty.id)}
-              onSos={() => router.push({ pathname: '/bookings/sos', params: { bookingId: booking.id } })}>
+              onOpenProfile={() => openProfile(booking.otherParty.id)}>
               {canCancel(booking) && (
                 <CancelFooter
                   confirming={confirmId === booking.id}
