@@ -13,15 +13,22 @@ import { dateKey, firstName } from '@/utils/home';
 const HOUR_MS = 60 * 60 * 1000;
 
 // today's ride the driver can still start: not started yet, and not more than
-// an hour past its departure (canStartAt is 30 min before departure)
+// an hour past its departure
 export function findStartableRide(today: TodayRide[] | null, now: Date): TodayRide | null {
   return (
     today?.find(
       (ride) =>
-        ride.tripStatus === null &&
-        new Date(ride.canStartAt).getTime() + 1.5 * HOUR_MS > now.getTime(),
+        ride.tripStatus === null && departureToday(ride, now).getTime() + HOUR_MS > now.getTime(),
     ) ?? null
   );
+}
+
+// departureTime keeps the date the ride was created, so move its clock time onto today
+function departureToday(ride: TodayRide, now: Date): Date {
+  const departure = new Date(ride.departureTime);
+  const today = new Date(now);
+  today.setHours(departure.getHours(), departure.getMinutes(), 0, 0);
+  return today;
 }
 
 export function pickedUpCount(trip: DriverTrip): number {
