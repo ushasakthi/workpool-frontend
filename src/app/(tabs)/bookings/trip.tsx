@@ -33,6 +33,7 @@ export default function TripScreen() {
   const loadCurrent = useTripStore((state) => state.loadCurrent);
   const finish = useTripStore((state) => state.finish);
   const requests = useBookingStore((state) => state.requests);
+  const pastDrives = useBookingStore((state) => state.pastDrives);
   const loadRequests = useBookingStore((state) => state.loadRequests);
   const cancelBooking = useBookingStore((state) => state.cancel);
   const completeBooking = useBookingStore((state) => state.complete);
@@ -140,8 +141,11 @@ export default function TripScreen() {
 
   if (summary) {
     // one rider at a time; the button goes once everyone is rated
+    // finished bookings sit in Past rides once Ride requests reloads, so check both
     const nextToRate = summary.completedBookingIds.find(
-      (id) => !requests?.find((item) => item.id === id)?.reviewedByMe,
+      (id) =>
+        !(requests?.find((item) => item.id === id) ?? pastDrives?.find((item) => item.id === id))
+          ?.reviewedByMe,
     );
     return (
       <Screen underTabBar>

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/admin/avatar';
@@ -8,10 +8,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TextField } from '@/components/ui/text-field';
 import { Icons } from '@/constants/icons';
 import { Spacing } from '@/constants/theme';
+import { UserRole } from '@/constants/user-role.enum';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useBookingStore } from '@/stores/useBookingStore';
 import { useReviewStore } from '@/stores/useReviewStore';
 import type { BookingListItem } from '@/types/booking.types';
@@ -32,13 +35,33 @@ export default function RateReviewScreen() {
       state.pastDrives?.find((b) => b.id === bookingId),
   );
   const markReviewed = useBookingStore((state) => state.markReviewed);
+  const loadPastDrives = useBookingStore((state) => state.loadPastDrives);
   const submitReview = useReviewStore((state) => state.submitReview);
+  const role = useAuthStore((state) => state.user?.role);
+  const canDrive = role === UserRole.DRIVER || role === UserRole.BOTH;
+  // a finished ride drops out of Ride requests, so a driver may need Past rides loaded first
+  const [lookedInPast, setLookedInPast] = useState(false);
+
+  useEffect(() => {
+    if (booking || !canDrive || lookedInPast) return;
+    void loadPastDrives()
+      .catch(() => undefined)
+      .finally(() => setLookedInPast(true));
+  }, [booking, canDrive, lookedInPast, loadPastDrives]);
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!booking && canDrive && !lookedInPast) {
+    return (
+      <Screen underTabBar>
+        <Skeleton height={240} radius={Spacing.four} />
+      </Screen>
+    );
+  }
 
   if (!booking) {
     return (
