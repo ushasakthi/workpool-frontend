@@ -3,6 +3,8 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { FilterTabs } from '@/components/admin/filter-tabs';
+import { StatusBadge } from '@/components/admin/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
@@ -15,10 +17,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAdminStore } from '@/stores/useAdminStore';
 import type { AdminReport } from '@/types/report.types';
 import { getErrorMessage } from '@/utils/errors';
-import { daysSince, formatTimeAgo } from '@/utils/formatters';
+import { daysSince, formatDate, formatTimeAgo } from '@/utils/formatters';
 import { REPORT_CATEGORY_LABEL, reportCode, SAFETY_CATEGORIES } from '@/utils/reports';
 
-const COLUMN_FLEX = { code: 0.8, reason: 3, reported: 2, reporter: 2.2, filed: 1.2 };
+const COLUMN_FLEX = { code: 0.8, reason: 3, reported: 2, reporter: 2.2, filed: 1.2, decision: 1.8 };
 // the two buttons need a fixed space, the text columns share the rest
 const RESOLVE_WIDTH = 270;
 // waiting longer than this is shown in red as overdue
@@ -32,7 +34,29 @@ const SEVERITY_OPTIONS: { value: ReportSeverity; label: string; hint: string }[]
   { value: ReportSeverity.HIGH, label: 'High', hint: 'Safety risk' },
 ];
 
+type ReportsView = 'open' | 'history';
+
+const VIEW_TABS: { value: ReportsView; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'history', label: 'History' },
+];
+
 export default function AdminReportsScreen() {
+  const [view, setView] = useState<ReportsView>('open');
+
+  return (
+    <View style={styles.flex}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.tabs}>
+          <FilterTabs tabs={VIEW_TABS} value={view} onChange={setView} />
+        </View>
+        {view === 'open' ? <OpenReports /> : <ReportHistory />}
+      </ScrollView>
+    </View>
+  );
+}
+
+function OpenReports() {
   const theme = useTheme();
   const reports = useAdminStore((state) => state.openReports);
   const load = useAdminStore((state) => state.loadOpenReports);
@@ -59,9 +83,8 @@ export default function AdminReportsScreen() {
   }
 
   return (
-    <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.titleRow}>
+    <>
+      <View style={styles.titleRow}>
           <View style={styles.grow}>
             <ThemedText type="title" style={styles.title}>
               Open reports
@@ -123,7 +146,112 @@ export default function AdminReportsScreen() {
             />
           ))}
         </View>
-      </ScrollView>
+    </>
+  );
+}
+
+// upheld and dismissed reports, so a decision never disappears
+function ReportHistory() {
+  const theme = useTheme();
+  const history = useAdminStore((state) => state.reportHistory);
+  const load = useAdminStore((state) => state.loadReportHistory);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void load().catch((err) => setLoadError(getErrorMessage(err)));
+  }, [load]);
+
+  return (
+    <>
+      <View>
+        <ThemedText type="title" style={styles.title}>
+          Report history
+        </ThemedText>
+        <ThemedText themeColor="textSecondary">
+          {loadError
+            ? 'Couldn’t load the history'
+            : history === null
+              ? 'Loading…'
+              : `${history.length} decided · newest first`}
+        </ThemedText>
+      </View>
+
+      {loadError && <Banner message={loadError} />}
+
+      <View style={[styles.tableCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <HistoryHeaderRow />
+
+        {history === null &&
+          !loadError &&
+          Array.from({ length: 4 }).map((_, index) => <SkeletonRow key={index} />)}
+
+        {history !== null && history.length === 0 && (
+          <View style={styles.emptyState}>
+            <ThemedText type="smallBold" style={styles.emptyTitle}>
+              No decisions yet
+            </ThemedText>
+            <ThemedText themeColor="textSecondary">
+              Upheld and dismissed reports appear here.
+            </ThemedText>
+          </View>
+        )}
+
+        {history?.map((report) => <HistoryRow key={report.id} report={report} />)}
+      </View>
+    </>
+  );
+}
+
+function HistoryHeaderRow() {
+  const theme = useTheme();
+  const cell = (label: string, flex: number) => (
+    <ThemedText type="smallBold" themeColor="textSecondary" style={{ flex }}>
+      {label}
+    </ThemedText>
+  );
+  return (
+    <View style={[styles.headerRow, { backgroundColor: theme.backgroundElement, borderBottomColor: theme.border }]}>
+      {cell('Report', COLUMN_FLEX.code)}
+      {cell('Reason', COLUMN_FLEX.reason)}
+      {cell('Reported user', COLUMN_FLEX.reported)}
+      {cell('Reporter', COLUMN_FLEX.reporter)}
+      {cell('Decision', COLUMN_FLEX.decision)}
+      {cell('Decided', COLUMN_FLEX.filed)}
+    </View>
+  );
+}
+
+function HistoryRow({ report }: { report: AdminReport }) {
+  const theme = useTheme();
+  const upheld = report.status === ReportStatus.REVIEWED;
+  const severity = SEVERITY_OPTIONS.find((option) => option.value === report.severity)?.label;
+
+  return (
+    <View style={[styles.dataRow, styles.rowBorder, { borderBottomColor: theme.border }]}>
+      <ThemedText type="smallBold" themeColor="textSecondary" style={{ flex: COLUMN_FLEX.code }}>
+        {reportCode(report.id)}
+      </ThemedText>
+      <View style={{ flex: COLUMN_FLEX.reason }}>
+        <ThemedText type="smallBold">{REPORT_CATEGORY_LABEL[report.category]}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          {report.reason ? `“${report.reason}”` : 'No details given'}
+        </ThemedText>
+      </View>
+      <ThemedText type="smallBold" style={{ flex: COLUMN_FLEX.reported }}>
+        {report.reportedUser.name}
+      </ThemedText>
+      <ThemedText type="small" style={{ flex: COLUMN_FLEX.reporter }}>
+        {report.reportedBy.name}
+      </ThemedText>
+      <View style={{ flex: COLUMN_FLEX.decision, alignItems: 'flex-start' }}>
+        <StatusBadge
+          label={upheld ? `Upheld${severity ? ` · ${severity}` : ''}` : 'Dismissed'}
+          tone={upheld ? 'rejected' : 'neutral'}
+        />
+      </View>
+      <ThemedText type="small" themeColor="textSecondary" style={{ flex: COLUMN_FLEX.filed }}>
+        {report.resolvedAt ? formatDate(report.resolvedAt) : '—'}
+      </ThemedText>
     </View>
   );
 }
@@ -364,6 +492,10 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.four,
     gap: Spacing.four,
+  },
+  // the tabs share this width equally, like the Users screen
+  tabs: {
+    width: 220,
   },
   titleRow: {
     flexDirection: 'row',

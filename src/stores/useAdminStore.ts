@@ -31,6 +31,9 @@ interface AdminState {
     status: ReportStatus.REVIEWED | ReportStatus.DISMISSED,
     severity?: ReportSeverity,
   ) => Promise<void>;
+  // upheld and dismissed reports, newest decision first; null = loading
+  reportHistory: AdminReport[] | null;
+  loadReportHistory: () => Promise<void>;
 
   // users matching the current filters; null = loading
   users: AdminUsersPage | null;
@@ -56,12 +59,23 @@ export const useAdminStore = create<AdminState>((set) => ({
     set({ openReports: await listReports(ReportStatus.OPEN) });
   },
 
-  // once resolved it's no longer open, so it leaves the queue
+  // once resolved it leaves the queue and joins the history (reloaded next time it's opened)
   resolve: async (id, status, severity) => {
     await resolveReport(id, status, severity);
     set((state) => ({
       openReports: state.openReports?.filter((report) => report.id !== id) ?? null,
+      reportHistory: null,
     }));
+  },
+
+  reportHistory: null,
+
+  loadReportHistory: async () => {
+    const all = await listReports();
+    const decided = all
+      .filter((report) => report.status !== ReportStatus.OPEN)
+      .sort((a, b) => (b.resolvedAt ?? '').localeCompare(a.resolvedAt ?? ''));
+    set({ reportHistory: decided });
   },
 
   users: null,

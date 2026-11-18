@@ -11,14 +11,16 @@ import { ThemedText } from '@/components/themed-text';
 import { Banner } from '@/components/ui/banner';
 import { BookingStatus } from '@/constants/booking-status.enum';
 import { Icons } from '@/constants/icons';
+import { ReportStatus } from '@/constants/report-status.enum';
 import { RideStatus } from '@/constants/ride-status.enum';
 import { Spacing } from '@/constants/theme';
 import { UserRole } from '@/constants/user-role.enum';
 import { WEEKDAYS_IN_ORDER, type Weekday } from '@/constants/weekday.enum';
 import { useTheme } from '@/hooks/use-theme';
-import type { AdminUserDetail } from '@/types/admin.types';
+import type { AdminUserDetail, AdminUserReport } from '@/types/admin.types';
 import { getErrorMessage } from '@/utils/errors';
-import { formatClockTime, formatCost, formatDate } from '@/utils/formatters';
+import { formatClockTime, formatCost, formatDate, formatTravelDate } from '@/utils/formatters';
+import { REPORT_CATEGORY_LABEL } from '@/utils/reports';
 
 const ROLE_LABEL: Record<UserRole, string> = {
   [UserRole.DRIVER]: 'Driver',
@@ -54,6 +56,20 @@ function formatDateTime(iso: string): string {
 
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// a ride's departureTime keeps the day it was created, so show the booking's own day
+function joinedDate(departureTime: string, travelDate?: string): string {
+  if (!travelDate) return formatDateTime(departureTime);
+  return `${formatTravelDate(travelDate)}, ${formatClockTime(departureTime)}`;
+}
+
+// Open / Upheld · Medium / Dismissed
+function reportBadge(report: AdminUserReport): { label: string; tone: BadgeTone } {
+  if (report.status === ReportStatus.OPEN) return { label: 'Open', tone: 'pending' };
+  if (report.status === ReportStatus.DISMISSED) return { label: 'Dismissed', tone: 'neutral' };
+  const severity = report.severity ? ` · ${capitalize(report.severity)}` : '';
+  return { label: `Upheld${severity}`, tone: 'rejected' };
 }
 
 export default function AdminUserDetailScreen() {
@@ -199,6 +215,25 @@ export default function AdminUserDetailScreen() {
           </View>
 
           <View style={styles.column}>
+            <Section title={`REPORTS AGAINST (${user.reportsAgainst.length})`}>
+              {user.reportsAgainst.length === 0 && <EmptyText text="No reports against this user." />}
+              {user.reportsAgainst.map((report) => (
+                <View key={report.id} style={[styles.card, { borderColor: theme.border }]}>
+                  <View style={styles.grow}>
+                    <ThemedText type="smallBold">{REPORT_CATEGORY_LABEL[report.category]}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                      {report.reason ? `“${report.reason}”` : 'No details given'}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Filed by {report.reportedByName} · {formatDate(report.createdAt)}
+                      {report.resolvedAt ? ` · Decided ${formatDate(report.resolvedAt)}` : ''}
+                    </ThemedText>
+                  </View>
+                  <StatusBadge {...reportBadge(report)} />
+                </View>
+              ))}
+            </Section>
+
             <Section title={`VEHICLES (${user.vehicles.length})`}>
               {user.vehicles.length === 0 && <EmptyText text="No vehicles added." />}
               {user.vehicles.map((vehicle) => (
@@ -253,7 +288,7 @@ export default function AdminUserDetailScreen() {
                         : 'Ride no longer available'}
                     </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {trip.ride ? formatDateTime(trip.ride.departureTime) : `Requested ${formatDate(trip.requestedAt)}`}
+                      {trip.ride ? joinedDate(trip.ride.departureTime, trip.travelDate) : `Requested ${formatDate(trip.requestedAt)}`}
                       {' · '}
                       {trip.seatsRequested} seat{trip.seatsRequested === 1 ? '' : 's'}
                     </ThemedText>

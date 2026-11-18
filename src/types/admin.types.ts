@@ -1,5 +1,8 @@
 import { AdminAction } from '@/constants/admin-action.enum';
 import { BookingStatus } from '@/constants/booking-status.enum';
+import { ReportCategory } from '@/constants/report-category.enum';
+import { ReportSeverity } from '@/constants/report-severity.enum';
+import { ReportStatus } from '@/constants/report-status.enum';
 import { UserRole } from '@/constants/user-role.enum';
 import { VerificationStatus } from '@/constants/verification-status.enum';
 import type { Ride } from '@/types/ride.types';
@@ -46,6 +49,8 @@ export interface AdminJoinedRide {
   status: BookingStatus;
   seatsRequested: number;
   requestedAt: string;
+  // the day of this seat, "2026-11-18"
+  travelDate?: string;
   // null if the ride was deleted
   ride: {
     origin: GeoPoint;
@@ -66,6 +71,21 @@ export interface AdminUserDetail extends AdminUser {
   ridesOffered: Ride[];
   // as a passenger, newest first
   ridesJoined: AdminJoinedRide[];
+  // reports filed against this user, open and decided, newest first
+  reportsAgainst: AdminUserReport[];
+}
+
+// Same shape as backend admin.service.ts AdminUserReportView
+export interface AdminUserReport {
+  id: string;
+  category: ReportCategory;
+  reason?: string;
+  status: ReportStatus;
+  // set when an admin upholds the report
+  severity?: ReportSeverity;
+  reportedByName: string;
+  createdAt: string;
+  resolvedAt?: string;
 }
 
 export interface AdminUsersPage {
