@@ -94,6 +94,14 @@ export default function ProfileScreen() {
         <VerificationStatusCard verification={user.verification} />
       </View>
 
+      {/* the same public profile others see: score, what it's built from, reviews */}
+      <NavLink
+        icon="shieldCheck"
+        title="Your Trust Score"
+        subtitle="See what other users see"
+        onPress={() => router.push({ pathname: '/profile/[userId]', params: { userId: user.id } })}
+      />
+
       <NavLink
         icon="emergency"
         title="Emergency contact"
