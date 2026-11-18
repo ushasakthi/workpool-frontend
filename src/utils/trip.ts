@@ -35,9 +35,14 @@ export function pickedUpCount(trip: DriverTrip): number {
   return trip.stops.filter((stop) => stop.pickedUpAt).length;
 }
 
-// stops are already in pickup order, so the next one is the first not picked up
+// everyone gets in at the start, so the next pickup is simply the first not picked up
 export function nextStop(trip: DriverTrip): TripStop | null {
   return trip.stops.find((stop) => !stop.pickedUpAt) ?? null;
+}
+
+// stops come in drop-off order, so the next one is the first rider still in the car
+export function nextDropOff(trip: DriverTrip): TripStop | null {
+  return trip.stops.find((stop) => stop.pickedUpAt && !stop.droppedOffAt) ?? null;
 }
 
 // "Toyota Aqua · CAB-4521", or null if the car couldn't be loaded
@@ -49,7 +54,7 @@ export function vehicleLabel(trip: PassengerTrip): string | null {
 // the passenger's steps: started → on the way / picked up → arrived
 export function passengerTimeline(trip: PassengerTrip): TimelineStep[] {
   const driver = firstName(trip.driver.name);
-  const destination = trip.destination.label ?? 'Destination';
+  const destination = trip.dropOffLabel;
   const started: TimelineStep = {
     label: `${driver} started`,
     time: formatClockTime(trip.startedAt),

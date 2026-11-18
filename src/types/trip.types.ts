@@ -21,6 +21,8 @@ export interface TripStop {
   passenger: { id: string; name: string; trustScore: number | null };
   seats: number;
   pickupLabel: string;
+  // the rider's home or work, whichever is nearer the ride's end
+  dropOffLabel: string;
   pickedUpAt?: string;
   droppedOffAt?: string;
 }
@@ -37,7 +39,7 @@ interface TripBase {
 
 export interface DriverTrip extends TripBase {
   side: 'driver';
-  // in pickup order
+  // in drop-off order, nearest the start first
   stops: TripStop[];
 }
 
@@ -54,6 +56,7 @@ export interface PassengerTrip extends TripBase {
     pickedUpAt?: string;
   };
   pickupLabel: string;
+  dropOffLabel: string;
   stopNumber: number;
   stopCount: number;
 }

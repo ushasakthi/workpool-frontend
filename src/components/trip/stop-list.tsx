@@ -11,16 +11,16 @@ import { formatClockTime } from '@/utils/formatters';
 
 interface StopListProps {
   stops: TripStop[];
-  dropOffLabel: string;
+  endLabel: string;
   droppingOffId: string | null;
   onDropOff: (bookingId: string) => void;
 }
 
-// every stop with its state: picked up ✓, next ●, waiting ○, then the drop-off ⚑
-export function StopList({ stops, dropOffLabel, droppingOffId, onDropOff }: StopListProps) {
+// every rider in drop-off order with their state: picked up ✓, next ●, waiting ○, then the end ⚑
+export function StopList({ stops, endLabel, droppingOffId, onDropOff }: StopListProps) {
   const theme = useTheme();
   const nextIndex = stops.findIndex((stop) => !stop.pickedUpAt);
-  const allOnBoard = nextIndex === -1;
+  const allDroppedOff = stops.every((stop) => stop.droppedOffAt);
 
   return (
     <View>
@@ -45,12 +45,16 @@ export function StopList({ stops, dropOffLabel, droppingOffId, onDropOff }: Stop
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.number}>
               {index + 1}
             </ThemedText>
-            <ThemedText
-              type={isNext ? 'smallBold' : 'small'}
-              themeColor={stop.pickedUpAt || isNext ? 'text' : 'textSecondary'}
-              style={styles.grow}>
-              {stop.passenger.name}
-            </ThemedText>
+            <View style={styles.grow}>
+              <ThemedText
+                type={isNext ? 'smallBold' : 'small'}
+                themeColor={stop.pickedUpAt || isNext ? 'text' : 'textSecondary'}>
+                {stop.passenger.name}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Gets off · {stop.dropOffLabel}
+              </ThemedText>
+            </View>
             {stop.droppedOffAt ? (
               <ThemedText type="small" themeColor="textSecondary">
                 Dropped off {formatClockTime(stop.droppedOffAt)}
@@ -79,13 +83,13 @@ export function StopList({ stops, dropOffLabel, droppingOffId, onDropOff }: Stop
         </View>
         <View style={styles.number} />
         <ThemedText type="smallBold" style={styles.grow}>
-          {dropOffLabel}
+          {endLabel}
         </ThemedText>
-        {allOnBoard ? (
+        {allDroppedOff ? (
           <NextPill />
         ) : (
           <ThemedText type="small" themeColor="textSecondary">
-            Drop-off
+            End
           </ThemedText>
         )}
       </View>

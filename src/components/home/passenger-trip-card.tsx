@@ -44,7 +44,7 @@ export function PassengerTripCard({ trip, onPress }: { trip: PassengerTrip; onPr
       {pickedUpAt ? (
         <View>
           <ThemedText style={styles.title}>
-            On the way to {trip.destination.label ?? 'your drop-off'}
+            On the way to {trip.dropOffLabel}
           </ThemedText>
           <View style={styles.row}>
             <SymbolView name={Icons.checkCircle} size={15} tintColor={theme.primary} />

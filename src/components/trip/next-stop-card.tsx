@@ -11,36 +11,59 @@ import { useTheme } from '@/hooks/use-theme';
 import type { TripStop } from '@/types/trip.types';
 
 interface NextStopCardProps {
-  // null once everyone is on board: the card shows the drop-off instead
+  // next rider to pick up; null once everyone is on board
   stop: TripStop | null;
-  dropOffLabel: string;
+  // next rider to drop off; null once everyone is out
+  dropOff: TripStop | null;
+  // the ride's end, shown after the last drop-off
+  endLabel: string;
   ridersOnBoard: number;
   onEnterPin: (bookingId: string) => void;
+  droppingOffId: string | null;
+  onDropOff: (bookingId: string) => void;
 }
 
-// the hero card on the driver's trip screen
-export function NextStopCard({ stop, dropOffLabel, ridersOnBoard, onEnterPin }: NextStopCardProps) {
+// the hero card on the driver's trip screen: pickups first, then drop-offs, then the end
+export function NextStopCard({
+  stop,
+  dropOff,
+  endLabel,
+  ridersOnBoard,
+  onEnterPin,
+  droppingOffId,
+  onDropOff,
+}: NextStopCardProps) {
   const theme = useTheme();
   const cardStyle = [styles.card, { backgroundColor: theme.background, borderColor: theme.primarySoft }];
 
   if (!stop) {
     return (
-      <View style={[cardStyle, styles.dropOff]}>
-        <View style={[styles.flagCircle, { backgroundColor: theme.accentSoft }]}>
-          <SymbolView name={Icons.flag} size={22} tintColor={theme.accent} />
-        </View>
-        <View>
-          <ThemedText type="smallBold" themeColor="textSecondary">
-            Drop-off
-          </ThemedText>
-          <ThemedText style={styles.big}>{dropOffLabel}</ThemedText>
-          <View style={styles.row}>
-            <SymbolView name={Icons.people} size={16} tintColor={theme.textSecondary} />
-            <ThemedText type="small" themeColor="textSecondary">
-              {ridersOnBoard} rider{ridersOnBoard === 1 ? '' : 's'} on board
+      <View style={cardStyle}>
+        <View style={styles.row}>
+          <View style={[styles.flagCircle, { backgroundColor: theme.accentSoft }]}>
+            <SymbolView name={Icons.flag} size={22} tintColor={theme.accent} />
+          </View>
+          <View style={styles.grow}>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              {dropOff ? `Drop off ${dropOff.passenger.name}` : 'End of ride'}
             </ThemedText>
+            <ThemedText style={styles.big}>{dropOff ? dropOff.dropOffLabel : endLabel}</ThemedText>
+            <View style={styles.row}>
+              <SymbolView name={Icons.people} size={16} tintColor={theme.textSecondary} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {ridersOnBoard} rider{ridersOnBoard === 1 ? '' : 's'} on board
+              </ThemedText>
+            </View>
           </View>
         </View>
+        {dropOff && (
+          <Button
+            label="Drop off"
+            icon="check"
+            loading={droppingOffId === dropOff.bookingId}
+            onPress={() => onDropOff(dropOff.bookingId)}
+          />
+        )}
       </View>
     );
   }
@@ -72,10 +95,6 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.three,
-  },
-  dropOff: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   flagCircle: {
     width: 44,

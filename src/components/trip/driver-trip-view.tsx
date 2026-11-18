@@ -11,7 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { DriverTrip } from '@/types/trip.types';
 import { formatClockTime } from '@/utils/formatters';
-import { nextStop, pickedUpCount } from '@/utils/trip';
+import { nextDropOff, nextStop, pickedUpCount } from '@/utils/trip';
 
 interface DriverTripViewProps {
   trip: DriverTrip;
@@ -40,7 +40,8 @@ export function DriverTripView({
   const theme = useTheme();
   const picked = pickedUpCount(trip);
   const total = trip.stops.length;
-  const dropOffLabel = trip.destination.label ?? 'Destination';
+  const onBoard = trip.stops.filter((stop) => stop.pickedUpAt && !stop.droppedOffAt).length;
+  const endLabel = trip.destination.label ?? 'Destination';
 
   return (
     <>
@@ -63,7 +64,7 @@ export function DriverTripView({
           </ThemedText>
         </View>
         <ThemedText style={styles.route}>
-          {trip.origin.label ?? 'Start'} → {dropOffLabel}
+          {trip.origin.label ?? 'Start'} → {endLabel}
         </ThemedText>
         <View style={styles.row}>
           <ThemedText type="smallBold" themeColor="textSecondary">
@@ -85,9 +86,12 @@ export function DriverTripView({
         </ThemedText>
         <NextStopCard
           stop={nextStop(trip)}
-          dropOffLabel={dropOffLabel}
-          ridersOnBoard={picked}
+          dropOff={nextDropOff(trip)}
+          endLabel={endLabel}
+          ridersOnBoard={onBoard}
           onEnterPin={onEnterPin}
+          droppingOffId={droppingOffId}
+          onDropOff={onDropOff}
         />
       </View>
 
@@ -102,7 +106,7 @@ export function DriverTripView({
         )}
         <StopList
           stops={trip.stops}
-          dropOffLabel={dropOffLabel}
+          endLabel={endLabel}
           droppingOffId={droppingOffId}
           onDropOff={onDropOff}
         />

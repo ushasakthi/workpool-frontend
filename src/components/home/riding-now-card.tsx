@@ -9,7 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { DriverTrip } from '@/types/trip.types';
 import { firstName } from '@/utils/home';
-import { nextStop, pickedUpCount } from '@/utils/trip';
+import { nextDropOff, nextStop, pickedUpCount } from '@/utils/trip';
 
 // driver's Home card while a trip runs; solid green so it stands out from every other card
 export function RidingNowCard({ trip, onPress }: { trip: DriverTrip; onPress: () => void }) {
@@ -17,6 +17,7 @@ export function RidingNowCard({ trip, onPress }: { trip: DriverTrip; onPress: ()
   const picked = pickedUpCount(trip);
   const total = trip.stops.length;
   const next = nextStop(trip);
+  const dropOff = nextDropOff(trip);
 
   return (
     <Pressable
@@ -44,7 +45,9 @@ export function RidingNowCard({ trip, onPress }: { trip: DriverTrip; onPress: ()
         <ThemedText type="smallBold" themeColor="onPrimary" style={styles.grow}>
           {next
             ? `Next: ${firstName(next.passenger.name)} · ${next.pickupLabel}`
-            : `Next: Drop-off · ${trip.destination.label ?? 'Destination'}`}
+            : dropOff
+              ? `Next: Drop off ${firstName(dropOff.passenger.name)} · ${dropOff.dropOffLabel}`
+              : `Next: End · ${trip.destination.label ?? 'Destination'}`}
         </ThemedText>
         <SymbolView name={Icons.arrowRight} size={20} tintColor={theme.onPrimary} />
       </View>
