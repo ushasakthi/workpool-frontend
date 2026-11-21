@@ -53,6 +53,15 @@ export async function forgotPassword(email: string): Promise<string> {
   return response.data.data.message;
 }
 
+// returns fresh tokens: the server signs out every other device
+export async function changePassword(currentPassword: string, newPassword: string): Promise<AuthResult> {
+  const response = await apiClient.post<SuccessResponse<AuthResult>>('/auth/change-password', {
+    currentPassword,
+    newPassword,
+  });
+  return response.data.data;
+}
+
 export async function resetPassword(
   token: string,
   newPassword: string,
