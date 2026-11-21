@@ -1,13 +1,166 @@
 import { create } from 'zustand';
 
+import {
+  AUTH_REFRESH_TOKEN_STORAGE_KEY,
+  AUTH_TOKEN_STORAGE_KEY,
+  deleteSecureItem,
+  readSecureItem,
+  setSessionExpiredHandler,
+  setTokenRefreshedHandler,
+  writeSecureItem,
+} from '@/api/client';
+import { logout as logoutRequest } from '@/api/auth.api';
+import {
+  getMe,
+  updateEmergencyContact as updateEmergencyContactRequest,
+  updateProfile as updateProfileRequest,
+  updateTravelProfile as updateTravelProfileRequest,
+  uploadProfilePhoto as uploadProfilePhotoRequest,
+  type ProfilePhotoFile,
+  type UpdateProfileInput,
+  type UpdateTravelProfileInput,
+} from '@/api/users.api';
+import { useAdminStore } from '@/stores/useAdminStore';
+import { useBookingStore } from '@/stores/useBookingStore';
+import { useReviewStore } from '@/stores/useReviewStore';
+import { useRideStore } from '@/stores/useRideStore';
+import { useTripStore } from '@/stores/useTripStore';
+import { useVehicleStore } from '@/stores/useVehicleStore';
+import type { AuthResult, EmergencyContact, UserProfile } from '@/types/user.types';
+
+type AuthStatus = 'idle' | 'hydrating' | 'authenticated' | 'unauthenticated';
+
 interface AuthState {
+  status: AuthStatus;
   token: string | null;
+  refreshToken: string | null;
+  user: UserProfile | null;
   isAuthenticated: boolean;
-  setToken: (token: string | null) => void;
+  hydrate: () => Promise<void>;
+  setSession: (result: AuthResult) => Promise<void>;
+  clearSession: () => Promise<void>;
+  // user tapped Log out: tell the server, then clear the phone
+  logout: () => Promise<void>;
+  refreshMe: () => Promise<void>;
+  updateProfile: (input: UpdateProfileInput) => Promise<void>;
+  updateEmergencyContact: (input: EmergencyContact) => Promise<void>;
+  updateTravelProfile: (input: UpdateTravelProfileInput) => Promise<void>;
+  uploadProfilePhoto: (file: ProfilePhotoFile) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
+  status: 'idle',
   token: null,
+  refreshToken: null,
+  user: null,
   isAuthenticated: false,
-  setToken: (token) => set({ token, isAuthenticated: token !== null }),
+
+  hydrate: async () => {
+    set({ status: 'hydrating' });
+
+    const [token, refreshToken] = await Promise.all([
+      readSecureItem(AUTH_TOKEN_STORAGE_KEY),
+      readSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
+    ]);
+
+    if (!token) {
+      set({ status: 'unauthenticated', token: null, refreshToken: null, user: null, isAuthenticated: false });
+      return;
+    }
+
+    // set before getMe: if it refreshes the token, the refresh handler replaces these
+    set({ token, refreshToken });
+    try {
+      const user = await getMe();
+      set({ status: 'authenticated', user, isAuthenticated: true });
+    } catch {
+      // token expired or invalid, clear it
+      await Promise.all([
+        deleteSecureItem(AUTH_TOKEN_STORAGE_KEY),
+        deleteSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
+      ]);
+      set({ status: 'unauthenticated', token: null, refreshToken: null, user: null, isAuthenticated: false });
+    }
+  },
+
+  setSession: async (result) => {
+    await Promise.all([
+      writeSecureItem(AUTH_TOKEN_STORAGE_KEY, result.accessToken),
+      writeSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY, result.refreshToken),
+    ]);
+
+    const user = await getMe();
+    set({
+      status: 'authenticated',
+      token: result.accessToken,
+      refreshToken: result.refreshToken,
+      user,
+      isAuthenticated: true,
+    });
+  },
+
+  logout: async () => {
+    try {
+      await logoutRequest();
+    } catch {
+      // offline or already expired: still log out on this phone
+    }
+    await get().clearSession();
+  },
+
+  clearSession: async () => {
+    await Promise.all([
+      deleteSecureItem(AUTH_TOKEN_STORAGE_KEY),
+      deleteSecureItem(AUTH_REFRESH_TOKEN_STORAGE_KEY),
+    ]);
+    set({ status: 'unauthenticated', token: null, refreshToken: null, user: null, isAuthenticated: false });
+    // the next person to log in on this phone must not see the last user's data
+    useBookingStore.setState({ myBookings: null, requests: null, savings: null });
+    useRideStore.setState({ rides: null, searchResults: null, rideDetail: null });
+    useVehicleStore.setState({ vehicles: null });
+    useReviewStore.setState({ profile: null, reviews: null });
+    useTripStore.setState({ current: null, checked: false, updatedAt: null, today: null });
+    useAdminStore.setState({
+      stats: null,
+      statsLoadedAt: null,
+      openReports: null,
+      users: null,
+      actionLog: null,
+    });
+  },
+
+  refreshMe: async () => {
+    const user = await getMe();
+    set({ user });
+  },
+
+  updateProfile: async (input) => {
+    const user = await updateProfileRequest(input);
+    set({ user });
+  },
+
+  updateEmergencyContact: async (input) => {
+    const user = await updateEmergencyContactRequest(input);
+    set({ user });
+  },
+
+  updateTravelProfile: async (input) => {
+    const user = await updateTravelProfileRequest(input);
+    set({ user });
+  },
+
+  uploadProfilePhoto: async (file) => {
+    const user = await uploadProfilePhotoRequest(file);
+    set({ user });
+  },
 }));
+
+// if the token refresh fails, log out so the user goes back to login
+setSessionExpiredHandler(() => {
+  void useAuthStore.getState().clearSession();
+});
+
+// keep the store's copy in step with secure storage after a refresh
+setTokenRefreshedHandler((token, refreshToken) => {
+  useAuthStore.setState({ token, refreshToken });
+});

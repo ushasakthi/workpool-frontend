@@ -1,45 +1,91 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { Tabs, TabList, TabSlot, TabTrigger, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
+import { Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors } from '@/constants/theme';
+import { ThemedText } from './themed-text';
+import { ThemedView } from './themed-view';
 
+import { Icons } from '@/constants/icons';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+
+// Using JS Tabs because native tabs crash on iOS 26
+// (software-mansion/react-native-screens#4176)
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      {/* Icons pending the design step — labels only for now. */}
-      <NativeTabs.Trigger name="rides">
-        <NativeTabs.Trigger.Label>Rides</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="bookings">
-        <NativeTabs.Trigger.Label>Bookings</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs style={styles.tabs}>
+      <TabSlot />
+      <TabList asChild>
+        <AppTabBar>
+          <TabTrigger name="home" href="/" asChild>
+            <TabButton icon="home">Home</TabButton>
+          </TabTrigger>
+          <TabTrigger name="rides" href="/rides/my-rides" asChild>
+            <TabButton icon="car">Rides</TabButton>
+          </TabTrigger>
+          <TabTrigger name="bookings" href="/bookings" asChild>
+            <TabButton icon="calendar">Bookings</TabButton>
+          </TabTrigger>
+          <TabTrigger name="commute" href="/commute" asChild>
+            <TabButton icon="route">Commute</TabButton>
+          </TabTrigger>
+          <TabTrigger name="profile" href="/profile" asChild>
+            <TabButton icon="personCircle">Profile</TabButton>
+          </TabTrigger>
+        </AppTabBar>
+      </TabList>
+    </Tabs>
   );
 }
+
+type TabButtonProps = TabTriggerSlotProps & { icon: keyof typeof Icons };
+
+function TabButton({ children, isFocused, icon, ...props }: TabButtonProps) {
+  const theme = useTheme();
+  const tintColor = isFocused ? theme.text : theme.textSecondary;
+
+  return (
+    <Pressable {...props} style={styles.tabButton}>
+      <SymbolView name={Icons[icon]} size={22} tintColor={tintColor} />
+      <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        {children}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function AppTabBar(props: TabListProps) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <ThemedView
+      {...props}
+      style={[
+        styles.bar,
+        { height: BottomTabInset + insets.bottom, paddingBottom: insets.bottom, borderTopColor: theme.border },
+      ]}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  tabs: {
+    flex: 1,
+  },
+  bar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.half,
+  },
+});

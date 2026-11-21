@@ -7,3 +7,32 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+/* TextField shows focus via its own border color (see components/ui/text-field.tsx) —
+   suppress the browser's default focus ring on the underlying <input> so they don't double up. */
+input:focus {
+  outline: none;
+}
+
+/* Chrome/Safari paint autofilled inputs with their own background (that washed-out blue),
+   overriding TextField's fill. Repaint it to match constants/theme.ts Colors.*.backgroundElement
+   and Colors.*.text instead — the 1000px inset shadow trick is the standard way to override it,
+   and the long transition delay stops it flashing back to the browser default. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #000000;
+  -webkit-box-shadow: 0 0 0px 1000px #F0F0F3 inset;
+  box-shadow: 0 0 0px 1000px #F0F0F3 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+@media (prefers-color-scheme: dark) {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0px 1000px #212225 inset;
+    box-shadow: 0 0 0px 1000px #212225 inset;
+  }
+}

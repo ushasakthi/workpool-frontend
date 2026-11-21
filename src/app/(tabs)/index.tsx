@@ -1,148 +1,282 @@
-import * as Device from 'expo-device';
-import { useEffect, useState } from 'react';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { getHealth } from '@/api/health.api';
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { GreetingHeader } from '@/components/home/greeting-header';
+import { NextTripCard } from '@/components/home/next-trip-card';
+import { PassengerTripCard } from '@/components/home/passenger-trip-card';
+import { QuickActions } from '@/components/home/quick-actions';
+import { RidingNowCard } from '@/components/home/riding-now-card';
+import { StartTripCard } from '@/components/home/start-trip-card';
+import { TripCompleteCard } from '@/components/home/trip-complete-card';
+import { SavingsCard } from '@/components/home/savings-card';
+import { SetupChecklist, type ChecklistItem } from '@/components/home/setup-checklist';
+import { Screen } from '@/components/ui/screen';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spacing } from '@/constants/theme';
+import { UserRole } from '@/constants/user-role.enum';
+import { useApiImageSource } from '@/hooks/use-api-image';
+import { useClock } from '@/hooks/use-clock';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useBookingStore } from '@/stores/useBookingStore';
+import { useRideStore } from '@/stores/useRideStore';
+import { useTripStore } from '@/stores/useTripStore';
+import { useVehicleStore } from '@/stores/useVehicleStore';
+import { getErrorMessage } from '@/utils/errors';
+import { findNextTrip, firstName, greetingFor } from '@/utils/home';
+import { findStartableRide, findTripToRate, isBookedToday } from '@/utils/trip';
+import { TRAVEL_STEPS, travelStepsDone } from '@/utils/travel';
 
-type ApiHealthState = 'loading' | 'ok' | 'error';
+export default function HomeScreen() {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const photo = useApiImageSource(user?.photoUrl);
 
-function useApiHealth() {
-  const [state, setState] = useState<ApiHealthState>('loading');
-  const [database, setDatabase] = useState<string | null>(null);
+  const myBookings = useBookingStore((state) => state.myBookings);
+  const requests = useBookingStore((state) => state.requests);
+  const savings = useBookingStore((state) => state.savings);
+  const loadMyBookings = useBookingStore((state) => state.loadMyBookings);
+  const loadRequests = useBookingStore((state) => state.loadRequests);
+  const loadSavings = useBookingStore((state) => state.loadSavings);
+  const myRides = useRideStore((state) => state.rides);
+  const loadRides = useRideStore((state) => state.load);
+  const vehicles = useVehicleStore((state) => state.vehicles);
+  const loadVehicles = useVehicleStore((state) => state.load);
+  const currentTrip = useTripStore((state) => state.current);
+  const todayRides = useTripStore((state) => state.today);
+  const loadCurrentTrip = useTripStore((state) => state.loadCurrent);
+  const loadTodayRides = useTripStore((state) => state.loadToday);
+  const startTrip = useTripStore((state) => state.start);
+  // re-renders every 30 s, so "You can start from 7:30" turns into a live button
+  const now = useClock(30_000);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [tripError, setTripError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [savingsError, setSavingsError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-    getHealth()
-      .then((health) => {
-        if (cancelled) return;
-        setDatabase(health.database);
-        setState('ok');
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setState('error');
-      });
+  const role = user?.role;
+  const canBook = role === UserRole.PASSENGER || role === UserRole.BOTH;
+  const canOffer = role === UserRole.DRIVER || role === UserRole.BOTH;
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const loadTrips = useCallback(async () => {
+    setTripError(null);
+    const loads: Promise<void>[] = [loadCurrentTrip()];
+    if (canBook) loads.push(loadMyBookings());
+    if (canOffer) loads.push(loadRides(), loadRequests(), loadTodayRides());
+    try {
+      await Promise.all(loads);
+    } catch (err) {
+      setTripError(getErrorMessage(err));
+    }
+  }, [
+    canBook,
+    canOffer,
+    loadMyBookings,
+    loadRides,
+    loadRequests,
+    loadCurrentTrip,
+    loadTodayRides,
+  ]);
 
-  return { state, database };
-}
+  const loadThisMonth = useCallback(async () => {
+    setSavingsError(null);
+    try {
+      await loadSavings();
+    } catch (err) {
+      setSavingsError(getErrorMessage(err));
+    }
+  }, [loadSavings]);
 
-function getApiHealthHint(state: ApiHealthState, database: string | null) {
-  if (state === 'loading') {
-    return <ThemedText type="small">checking…</ThemedText>;
+  // everything Home shows; errors are handled per card inside each load
+  const loadAll = useCallback(async () => {
+    const loads = [loadTrips(), loadThisMonth()];
+    // only feeds the checklist, so a failure just hides that row
+    if (canOffer) loads.push(loadVehicles().catch(() => undefined));
+    await Promise.all(loads);
+  }, [canOffer, loadTrips, loadThisMonth, loadVehicles]);
+
+  // reload every time Home is opened, so new bookings and rides show up
+  useFocusEffect(
+    useCallback(() => {
+      if (!role) return;
+      void loadAll();
+    }, [role, loadAll]),
+  );
+
+  // while a trip runs (or I'm booked for today), keep the trip card fresh every 20 s
+  const watchingTrip = currentTrip !== null || isBookedToday(myBookings, now);
+  useFocusEffect(
+    useCallback(() => {
+      if (!watchingTrip) return;
+      const timer = setInterval(() => {
+        void loadCurrentTrip().catch(() => undefined);
+        // picks up "Trip complete" once the driver finishes
+        if (canBook) void loadMyBookings().catch(() => undefined);
+      }, 20_000);
+      return () => clearInterval(timer);
+    }, [watchingTrip, canBook, loadCurrentTrip, loadMyBookings]),
+  );
+
+  async function handleStart(rideId: string) {
+    setStartError(null);
+    setStarting(true);
+    try {
+      await startTrip(rideId);
+      router.push('/bookings/trip');
+      void loadTodayRides();
+    } catch (err) {
+      setStartError(getErrorMessage(err));
+    } finally {
+      setStarting(false);
+    }
   }
-  if (state === 'error') {
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await loadAll();
+    setRefreshing(false);
+  }
+
+  if (!user) {
     return (
-      <ThemedText type="small" themeColor="textSecondary">
-        unreachable
-      </ThemedText>
+      <Screen underTabBar>
+        <HomeSkeleton />
+      </Screen>
     );
   }
-  return <ThemedText type="small">{`connected · db ${database}`}</ThemedText>;
-}
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
+  const tripsLoading =
+    (canBook && myBookings === null) || (canOffer && (myRides === null || requests === null));
+  const nextTrip = findNextTrip(
+    canBook ? myBookings : null,
+    canOffer ? myRides : null,
+    canOffer ? requests : null,
+  );
+
+  const startable = canOffer ? findStartableRide(todayRides, now) : null;
+  const tripToRate = canBook ? findTripToRate(myBookings, now) : null;
+
+  const savingsSides: ('passenger' | 'driver')[] = [];
+  if (canBook) savingsSides.push('passenger');
+  if (canOffer) savingsSides.push('driver');
+
+  const checklist: ChecklistItem[] = [
+    {
+      label: 'Travel profile',
+      done: travelStepsDone(user.travelProfile) === TRAVEL_STEPS,
+      onPress: () => router.push('/commute/travel-profile'),
+    },
+  ];
+  // wait for vehicles to load, so the row doesn't flash "to do"
+  if (canOffer && vehicles !== null) {
+    checklist.push({
+      label: 'Add a vehicle',
+      done: vehicles.length > 0,
+      onPress: () => router.push('/commute/vehicle'),
+    });
   }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <Screen underTabBar refreshing={refreshing} onRefresh={() => void handleRefresh()}>
+      <GreetingHeader
+        greeting={greetingFor()}
+        name={firstName(user.name)}
+        photo={photo}
+        onAvatarPress={() => router.push('/profile')}
+      />
+
+      {/* finished earlier today and not rated yet; sits above the next trip */}
+      {tripToRate && (
+        <TripCompleteCard
+          driverName={firstName(tripToRate.otherParty.name)}
+          onRate={() =>
+            router.push({ pathname: '/bookings/review', params: { bookingId: tripToRate.id } })
+          }
+        />
+      )}
+
+      {/* one trip card: riding now, then today's Start trip, then the normal next trip */}
+      {currentTrip?.side === 'driver' ? (
+        <RidingNowCard trip={currentTrip} onPress={() => router.push('/bookings/trip')} />
+      ) : currentTrip?.side === 'passenger' ? (
+        <PassengerTripCard trip={currentTrip} onPress={() => router.push('/bookings/trip')} />
+      ) : startable ? (
+        <StartTripCard
+          ride={startable}
+          now={now}
+          starting={starting}
+          error={startError}
+          onStart={() => void handleStart(startable.rideId)}
+        />
+      ) : (
+        (canBook || canOffer) && (
+        <NextTripCard
+          trip={nextTrip}
+          loading={tripsLoading}
+          error={tripError}
+          showSide={canBook && canOffer}
+          onPress={() =>
+            router.push(nextTrip?.side === 'driver' ? '/bookings/requests' : '/bookings')
+          }
+          onRetry={() => void loadTrips()}
+        />
+        )
+      )}
+
+      <QuickActions
+        onFind={canBook ? () => router.push('/rides/search') : undefined}
+        onOffer={canOffer ? () => router.push('/rides/post') : undefined}
+        onSwitchRole={canOffer ? undefined : () => router.push('/profile')}
+      />
+
+      {savingsSides.length > 0 && (
+        <SavingsCard
+          savings={savings}
+          error={savingsError}
+          sides={savingsSides}
+          onOpen={() => router.push('/profile/savings')}
+          onRetry={() => void loadThisMonth()}
+        />
+      )}
+
+      <SetupChecklist items={checklist} />
+    </Screen>
   );
 }
 
-export default function HomeScreen() {
-  const apiHealth = useApiHealth();
-
+function HomeSkeleton() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/(tabs)/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-          <HintRow
-            title="API health"
-            hint={getApiHealthHint(apiHealth.state, apiHealth.database)}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonText}>
+          <Skeleton width={110} height={14} />
+          <Skeleton width={180} height={30} />
+        </View>
+        <Skeleton circle height={44} />
+      </View>
+      <Skeleton height={260} radius={Spacing.three} />
+      <View style={styles.skeletonTiles}>
+        <Skeleton width="48%" height={84} radius={Spacing.three} />
+        <Skeleton width="48%" height={84} radius={Spacing.three} />
+      </View>
+      <Skeleton height={200} radius={Spacing.three} />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  skeletonHeader: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    justifyContent: 'space-between',
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  skeletonText: {
+    gap: 10,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  skeletonTiles: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 });
