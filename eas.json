@@ -1,0 +1,14 @@
+{
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "API_URL": "https://workpool.glxn.app/api/v1"
+      }
+    }
+  }
+}

@@ -21,8 +21,9 @@ const config: ExpoConfig = {
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
-    // Firebase settings for push notifications (kept out of git)
-    googleServicesFile: './google-services.json',
+    // Firebase settings for push notifications (kept out of git).
+    // EAS cloud builds get the file from the GOOGLE_SERVICES_JSON file variable.
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
   },
   web: {
     output: 'static',
